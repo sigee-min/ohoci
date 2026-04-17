@@ -1,4 +1,4 @@
-import { BookOpenTextIcon, CheckCircle2Icon, LogOutIcon, RefreshCwIcon } from 'lucide-react';
+import { ArrowRightIcon, BookOpenTextIcon, CheckCircle2Icon, LogOutIcon, RefreshCwIcon } from 'lucide-react';
 
 import { BrandLockup } from '@/components/app/brand-logo';
 import { LocaleSwitcher } from '@/components/app/locale-switcher';
@@ -9,14 +9,24 @@ import { useI18n } from '@/i18n';
 import { SETUP_STEP_META, SETUP_STEP_ORDER } from '@/lib/workspace-constants';
 import { cn } from '@/lib/utils';
 
-function badgeVariantForStep(step, isCurrentStep) {
-  if (step.completed) {
+function badgeVariantForStep(step, isCurrentStep, isBootstrapSaved) {
+  if (step.completed && !isBootstrapSaved) {
     return 'default';
   }
-  if (isCurrentStep) {
+  if (isCurrentStep || isBootstrapSaved) {
     return 'secondary';
   }
   return 'outline';
+}
+
+function isStepReachable(stepId, currentStepId, stepCompleted) {
+  if (stepCompleted) {
+    return true;
+  }
+
+  const stepIndex = SETUP_STEP_ORDER.indexOf(stepId);
+  const currentStepIndex = SETUP_STEP_ORDER.indexOf(currentStepId);
+  return stepIndex >= 0 && currentStepIndex >= 0 && stepIndex <= currentStepIndex;
 }
 
 function SetupRailCard({
@@ -32,6 +42,10 @@ function SetupRailCard({
   mobile = false
 }) {
   const { t } = useI18n();
+  const stepStates = setupStatus.bootstrapSteps || setupStatus.steps || {};
+  const currentMeta = SETUP_STEP_META[currentStepId] || SETUP_STEP_META[SETUP_STEP_ORDER[0]];
+  const continueToCurrentStep = activeStepId !== currentStepId;
+
   return (
     <Card className="border bg-card/92">
       <CardHeader className="border-b">
@@ -58,12 +72,32 @@ function SetupRailCard({
           </Badge>
         </div>
 
+        <div className="rounded-xl border bg-background/70 px-4 py-4">
+          <div className="flex flex-col gap-3">
+            <div className="space-y-1">
+              <Badge variant="secondary" className="w-fit">{t('setup.rail.step.required')}</Badge>
+              <p className="text-sm font-medium">{t(currentMeta.titleKey)}</p>
+              <p className="text-sm text-muted-foreground">{t(currentMeta.descriptionKey)}</p>
+            </div>
+
+            {continueToCurrentStep ? (
+              <Button type="button" variant="outline" className="justify-between" onClick={() => onSelectStep(currentStepId)}>
+                <span>{t(currentMeta.titleKey)}</span>
+                <ArrowRightIcon />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2">
           {SETUP_STEP_ORDER.map((stepId, index) => {
             const meta = SETUP_STEP_META[stepId];
-            const step = setupStatus.steps?.[stepId] || { completed: false, missing: [] };
+            const step = stepStates[stepId] || { completed: false, missing: [] };
+            const strictStep = setupStatus.steps?.[stepId] || { completed: false, missing: [] };
+            const bootstrapSaved = step.completed && !strictStep.completed;
             const Icon = meta.icon;
-            const selectable = step.completed || stepId === currentStepId;
+            const selectable = isStepReachable(stepId, currentStepId, step.completed);
+            const reached = selectable && !step.completed && stepId !== currentStepId;
 
             return (
               <Button
@@ -88,14 +122,19 @@ function SetupRailCard({
                       <p className="min-w-0 flex-1 text-sm font-medium">
                         {index + 1}. {t(meta.labelKey)}
                       </p>
-                      <Badge variant={badgeVariantForStep(step, stepId === currentStepId)} className="shrink-0">
+                      <Badge variant={badgeVariantForStep(step, stepId === currentStepId, bootstrapSaved)} className="shrink-0">
                         {step.completed
-                          ? t('setup.rail.step.done')
+                          ? bootstrapSaved
+                            ? t('setup.rail.step.saved')
+                            : t('setup.rail.step.done')
                           : stepId === currentStepId
                             ? t('setup.rail.step.required')
-                            : t('setup.rail.step.locked')}
+                            : reached
+                              ? t('setup.rail.step.review')
+                              : t('setup.rail.step.locked')}
                       </Badge>
                     </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{t(meta.descriptionKey)}</p>
                   </div>
                 </div>
               </Button>
@@ -150,7 +189,8 @@ export function SetupOnboardingView({
   onLogout,
   children
 }) {
-  const completedCount = SETUP_STEP_ORDER.filter((stepId) => setupStatus.steps?.[stepId]?.completed).length;
+  const stepStates = setupStatus.bootstrapSteps || setupStatus.steps || {};
+  const completedCount = SETUP_STEP_ORDER.filter((stepId) => stepStates[stepId]?.completed).length;
   const remainingCount = SETUP_STEP_ORDER.length - completedCount;
 
   return (

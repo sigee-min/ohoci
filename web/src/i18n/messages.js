@@ -96,10 +96,10 @@ export const LOCALE_MESSAGES = {
     'setup.step.github.label': 'GitHub',
     'setup.step.github.title': 'Connect GitHub',
     'setup.step.github.description':
-      'Stage GitHub App settings, confirm the installation-visible repositories, review active apps, and promote the staged settings when the local allowlist is safe before OCI settings open up.',
+      'Save the GitHub App now. If repository scope is not settled yet, tighten it later in Settings.',
     'setup.step.oci.label': 'OCI',
     'setup.step.oci.title': 'Configure OCI',
-    'setup.step.oci.description': 'Finish the credential and runtime values required for new runner launches.',
+    'setup.step.oci.description': 'Save one working OCI access path now. Finish launch settings later in Settings.',
     'setup.initialSetup': 'Initial setup',
     'setup.completeRequiredSteps': 'Finish the required steps before the dashboard becomes available.',
     'setup.completed': 'Completed',
@@ -111,9 +111,9 @@ export const LOCALE_MESSAGES = {
     'setup.stepStatus.locked': 'Locked',
     'setup.connectGithub': 'Connect GitHub',
     'setup.githubDescription':
-      'Stage GitHub App settings, confirm the installation-visible repositories, review active apps, and promote the staged settings when the local allowlist is safe before OCI settings open up.',
+      'Save the GitHub App now. If repository scope is not settled yet, tighten it later in Settings.',
     'setup.configureOci': 'Configure OCI',
-    'setup.ociDescription': 'Finish the credential and runtime values required for new runner launches.',
+    'setup.ociDescription': 'Save one working OCI access path now. Finish launch settings later in Settings.',
     'setup.setAdminPassword': 'Set the admin password',
     'setup.adminPasswordDescription':
       'Use the bootstrap password once, then replace it with a long-lived admin secret before the next setup steps unlock.',
@@ -125,8 +125,14 @@ export const LOCALE_MESSAGES = {
     'setup.rail.remaining.ready': 'Ready',
     'setup.rail.remaining.left': ({ count }) => `${count} left`,
     'setup.rail.step.done': 'Done',
+    'setup.rail.step.saved': 'Saved',
     'setup.rail.step.required': 'Required',
+    'setup.rail.step.review': 'Review',
     'setup.rail.step.locked': 'Locked',
+    'setup.pendingShell.title': 'Finish setup',
+    'setup.pendingShell.subtitle': 'Bootstrap is saved. Finalize routing and launch settings here before the full workspace opens.',
+    'setup.pendingShell.body':
+      'You can defer repository scope during bootstrap, but OhoCI will not unlock jobs, policies, or runner history until a live GitHub route and OCI launch path are ready.',
     'setup.overview.title': 'Setup overview',
     'setup.overview.description':
       'Current GitHub access, OCI credential mode, and runner launch target without opening every form.',
@@ -646,6 +652,7 @@ export const LOCALE_MESSAGES = {
     'github.repositories.footer':
       ({ selectable, total, selected }) =>
         `${total} installation-visible ${total === 1 ? 'repository' : 'repositories'}. ${selected} ${selected === 1 ? 'repository' : 'repositories'} selected locally.`,
+    'github.repositories.deferHint': 'Optional during bootstrap. Save now and tighten repository scope later in Settings.',
     'github.repositories.emptyLoadedTitle': 'No installation-visible repositories returned',
     'github.repositories.emptyLoadedBody':
       'The GitHub App verified successfully, but the installation did not return any visible repositories yet.',
@@ -827,6 +834,7 @@ export const LOCALE_MESSAGES = {
     'oci.form.passphraseDescription': 'Leave blank unless the private key is protected.',
     'oci.button.testConnection': 'Test connection',
     'oci.button.saveAndUse': 'Save and use',
+    'oci.button.saveAndOpenSettings': 'Save and open Settings',
     'oci.button.clearCredential': 'Clear saved credential',
     'oci.alert.catalogBackedTitle': 'Catalog-backed runtime target',
     'oci.alert.catalogBackedBody':
@@ -1500,10 +1508,10 @@ export const LOCALE_MESSAGES = {
     'setup.step.github.label': 'GitHub',
     'setup.step.github.title': 'GitHub 연결',
     'setup.step.github.description':
-      'GitHub App 설정을 스테이징하고 설치에 보이는 저장소와 활성 앱을 확인한 뒤, 로컬 허용 목록이 안전할 때 스테이징된 설정을 승격한 후 OCI 설정으로 진행하세요.',
+      '지금 GitHub App 설정을 저장하고 계속 진행하세요. 저장소 범위는 아직 정하지 못해도 나중에 설정에서 좁힐 수 있습니다.',
     'setup.step.oci.label': 'OCI',
     'setup.step.oci.title': 'OCI 설정',
-    'setup.step.oci.description': '새 러너를 실행하는 데 필요한 자격 증명과 런타임 값을 마무리하세요.',
+    'setup.step.oci.description': '지금 동작하는 OCI 접근 경로 하나만 저장하세요. 실행 설정은 나중에 설정에서 마무리할 수 있습니다.',
     'setup.initialSetup': '초기 설정',
     'setup.completeRequiredSteps': '대시보드를 사용하기 전에 필요한 단계를 완료하세요.',
     'setup.completed': '완료',
@@ -1515,9 +1523,9 @@ export const LOCALE_MESSAGES = {
     'setup.stepStatus.locked': '잠김',
     'setup.connectGithub': 'GitHub 연결',
     'setup.githubDescription':
-      'OCI 설정이 열리기 전에 GitHub App 설정을 스테이징하고 설치 범위와 활성 앱을 확인한 뒤, 로컬 허용 목록이 안전할 때 스테이징된 설정을 승격하세요.',
+      '지금 GitHub App 설정을 저장하고 계속 진행하세요. 저장소 범위는 아직 정하지 못해도 나중에 설정에서 좁힐 수 있습니다.',
     'setup.configureOci': 'OCI 설정',
-    'setup.ociDescription': '새 러너 실행에 필요한 자격 증명과 런타임 값을 마무리하세요.',
+    'setup.ociDescription': '지금 동작하는 OCI 접근 경로 하나만 저장하세요. 실행 설정은 나중에 설정에서 마무리할 수 있습니다.',
     'setup.setAdminPassword': '관리자 비밀번호 설정',
     'setup.adminPasswordDescription':
       '부트스트랩 비밀번호는 한 번만 사용하고, 다음 설정 단계가 열리기 전에 장기 운영용 관리자 비밀값으로 교체하세요.',
@@ -1529,8 +1537,14 @@ export const LOCALE_MESSAGES = {
     'setup.rail.remaining.ready': '준비됨',
     'setup.rail.remaining.left': ({ count }) => `${count}개 남음`,
     'setup.rail.step.done': '완료',
+    'setup.rail.step.saved': '저장됨',
     'setup.rail.step.required': '필수',
+    'setup.rail.step.review': '검토',
     'setup.rail.step.locked': '잠김',
+    'setup.pendingShell.title': '설정 마무리',
+    'setup.pendingShell.subtitle': '부트스트랩 저장은 끝났습니다. 전체 워크스페이스를 열기 전에 여기서 라우팅과 실행 설정을 마무리하세요.',
+    'setup.pendingShell.body':
+      '부트스트랩에서는 저장소 범위를 나중으로 미룰 수 있지만, 실제 GitHub 라우트와 OCI 실행 경로가 준비되기 전에는 작업, 정책, 러너 이력을 열지 않습니다.',
     'setup.overview.title': '설정 개요',
     'setup.overview.description': '모든 폼을 열지 않아도 현재 GitHub 접근, OCI 인증 모드, 러너 실행 대상을 확인할 수 있습니다.',
     'setup.tile.github.label': 'GitHub',
@@ -2041,6 +2055,7 @@ export const LOCALE_MESSAGES = {
       '로컬에서는 선택되었지만 현재 설치 범위에서는 보이지 않습니다.',
     'github.repositories.footer':
       ({ selectable, total, selected }) => `설치에 보이는 저장소 ${total}개, 로컬에서 ${selected}개 선택됨.`,
+    'github.repositories.deferHint': '부트스트랩 단계에서는 선택 사항입니다. 지금 저장하고 저장소 범위는 나중에 설정에서 좁히세요.',
     'github.repositories.emptyLoadedTitle': '설치에 보이는 저장소가 반환되지 않았습니다',
     'github.repositories.emptyLoadedBody':
       'GitHub App 확인은 성공했지만 설치에 보이는 저장소가 아직 반환되지 않았습니다.',
@@ -2221,6 +2236,7 @@ export const LOCALE_MESSAGES = {
     'oci.form.passphraseDescription': '개인 키가 보호되어 있지 않다면 비워 두세요.',
     'oci.button.testConnection': '연결 테스트',
     'oci.button.saveAndUse': '저장 후 사용',
+    'oci.button.saveAndOpenSettings': '저장 후 설정 열기',
     'oci.button.clearCredential': '저장된 자격 증명 지우기',
     'oci.alert.catalogBackedTitle': '카탈로그 기반 런타임 대상',
     'oci.alert.catalogBackedBody':

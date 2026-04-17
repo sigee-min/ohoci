@@ -120,7 +120,7 @@ func TestRateLimitedResponsesIncludeSecurityHeaders(t *testing.T) {
 
 func TestSecurityHeadersAreAppliedToNormalResponses(t *testing.T) {
 	handler := withSecurityHeaders(config.Config{
-		PublicBaseURL: "https://grunner.example.test",
+		PublicBaseURL: "https://ohoci.example.test",
 	}, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))

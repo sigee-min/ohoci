@@ -321,7 +321,7 @@ export function OCIAuthView({
                     <Button type="button" onClick={() => void onSave()} disabled={credentialBusy} aria-busy={ociAuthSaving}>
                       <BusyButtonContent
                         busy={ociAuthSaving}
-                        label={t('oci.button.saveAndUse')}
+                        label={onboardingMode ? t('oci.button.saveAndOpenSettings') : t('oci.button.saveAndUse')}
                         icon={UploadIcon}
                       />
                     </Button>

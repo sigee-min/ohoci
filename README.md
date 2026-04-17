@@ -119,15 +119,17 @@ On the first sign-in, change that password immediately and finish the guided set
 Prepare these inputs before onboarding:
 
 - a GitHub App registration and installation
-- the repositories you want OhoCI to manage
+- the repositories you want OhoCI to manage, if you already know the final allowlist
 - an OCI config file and private key
 - OCI launch target values such as compartment, subnet, and image
 
 The first-run path is:
 
 1. Change the bootstrap admin password.
-2. Save the GitHub App, verify the installation, and choose the repository allowlist.
-3. Save the OCI credential and the runtime target used for runner launches.
+2. Save the GitHub App and verify the installation. Repository scope can be narrowed later in Settings before the dashboard unlocks.
+3. Save one working OCI access path. Launch settings can be finished in Settings before runner launches are enabled.
+
+After bootstrap, OhoCI keeps you on the setup workspace until the live GitHub route, local repository allowlist, and OCI launch target are all ready.
 
 Repository scope is intentionally narrow: OhoCI only manages the intersection of the GitHub App installation scope and the repositories you select locally.
 

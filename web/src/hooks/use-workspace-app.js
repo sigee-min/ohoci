@@ -379,12 +379,50 @@ function deriveCurrentSetupStep(steps) {
   return SETUP_STEP_ORDER.find((stepId) => !steps[stepId]?.completed) || SETUP_STEP_ORDER[SETUP_STEP_ORDER.length - 1];
 }
 
+function filterSetupMissing(missing, ignoredKeys = []) {
+  const ignored = new Set(ignoredKeys.map((value) => String(value || '').trim().toLowerCase()).filter(Boolean));
+  return ensureArray(missing).filter((value) => !ignored.has(String(value || '').trim().toLowerCase()));
+}
+
+function hasGitHubBootstrapState(status = {}) {
+  return Boolean(
+    status.configured
+    || status.stagedConfig
+    || (Array.isArray(status.activeConfigs) && status.activeConfigs.length)
+  );
+}
+
+function hasOCIBootstrapState(authStatus = {}, runtimeStatus = {}) {
+  const recognizedMode = [authStatus.effectiveMode, authStatus.defaultMode]
+    .map((mode) => String(mode || '').trim().toLowerCase())
+    .some((mode) => mode && mode !== 'unknown' && mode !== 'unconfigured');
+
+  return Boolean(
+    authStatus.activeCredential
+    || (recognizedMode && (authStatus.runtimeConfigReady || runtimeStatus.ready))
+  );
+}
+
+function deriveCurrentOnboardingStep({ passwordComplete, githubComplete, ociComplete }) {
+  if (!passwordComplete) {
+    return 'password';
+  }
+  if (!githubComplete) {
+    return 'github';
+  }
+  if (!ociComplete) {
+    return 'oci';
+  }
+  return 'oci';
+}
+
 function normalizeSetupStatus(payload = {}, sessionData = null) {
   const base = createBlankSetupStatus(sessionData);
   const rawSteps = payload.steps || {};
   const rawPassword = rawSteps.password || payload.password || {};
   const rawGitHub = rawSteps.github || payload.github || {};
   const rawOCI = rawSteps.oci || payload.oci || payload.ociRuntime || {};
+  const rawOCIAuth = payload.ociAuth || {};
 
   const steps = {
     password: {
@@ -401,14 +439,53 @@ function normalizeSetupStatus(payload = {}, sessionData = null) {
     }
   };
 
+  const githubBootstrapReference = rawGitHub.stagedConfig
+    ? {
+        missing: rawGitHub.stagedMissing,
+        error: rawGitHub.stagedError
+      }
+    : {
+        missing: rawGitHub.missing,
+        error: rawGitHub.error
+      };
+  const githubBootstrapMissing = filterSetupMissing(githubBootstrapReference.missing, ['selectedRepos']);
+  const githubBootstrapCompleted = steps.github.completed
+    || (
+      hasGitHubBootstrapState(rawGitHub)
+      && githubBootstrapMissing.length === 0
+      && !coerceString(githubBootstrapReference.error)
+    );
+  const ociBootstrapCompleted = steps.oci.completed || hasOCIBootstrapState(rawOCIAuth, rawOCI);
+  const bootstrapSteps = {
+    password: { ...steps.password },
+    github: {
+      completed: githubBootstrapCompleted,
+      missing: githubBootstrapCompleted ? [] : githubBootstrapMissing
+    },
+    oci: {
+      completed: ociBootstrapCompleted,
+      missing: steps.oci.missing
+    }
+  };
   const completed = Boolean(payload.completed ?? payload.ready ?? SETUP_STEP_ORDER.every((stepId) => steps[stepId].completed));
+  const bootstrapCompleted = SETUP_STEP_ORDER.every((stepId) => bootstrapSteps[stepId].completed);
 
   return {
     ...base,
     completed,
+    operationalReady: completed,
     currentStep: completed ? SETUP_STEP_ORDER[SETUP_STEP_ORDER.length - 1] : deriveCurrentSetupStep(steps),
+    bootstrapCompleted,
+    bootstrapCurrentStep: bootstrapCompleted
+      ? SETUP_STEP_ORDER[SETUP_STEP_ORDER.length - 1]
+      : deriveCurrentOnboardingStep({
+          passwordComplete: bootstrapSteps.password.completed,
+          githubComplete: bootstrapSteps.github.completed,
+          ociComplete: bootstrapSteps.oci.completed
+        }),
     updatedAt: payload.updatedAt || new Date().toISOString(),
-    steps
+    steps,
+    bootstrapSteps
   };
 }
 
@@ -1641,16 +1718,24 @@ export function useWorkspaceApp() {
     });
   }, [ociRuntimeStatus.effectiveSettings]);
 
-  const currentOnboardingStep = useMemo(() => {
-    if (session?.mustChangePassword) {
-      return 'password';
-    }
-    return setupStatus.currentStep || deriveCurrentSetupStep(setupStatus.steps || {});
-  }, [session?.mustChangePassword, setupStatus]);
+  const onboardingPasswordComplete = Boolean(setupStatus.bootstrapSteps?.password?.completed ?? !session?.mustChangePassword);
+  const onboardingGitHubComplete = Boolean(setupStatus.bootstrapSteps?.github?.completed);
+  const onboardingOCIComplete = Boolean(setupStatus.bootstrapSteps?.oci?.completed);
+  const onboardingBootstrapComplete = Boolean(setupStatus.bootstrapCompleted);
+
+  const currentOnboardingStep = useMemo(() => deriveCurrentOnboardingStep({
+    passwordComplete: onboardingPasswordComplete,
+    githubComplete: onboardingGitHubComplete,
+    ociComplete: onboardingOCIComplete
+  }), [
+    onboardingGitHubComplete,
+    onboardingOCIComplete,
+    onboardingPasswordComplete
+  ]);
 
   const needsOnboarding = useMemo(() => {
-    return Boolean(session?.authenticated) && (session?.mustChangePassword || !setupStatus.completed);
-  }, [session, setupStatus.completed]);
+    return Boolean(session?.authenticated) && !onboardingBootstrapComplete;
+  }, [onboardingBootstrapComplete, session?.authenticated]);
 
   const recommendedSubnets = useMemo(() => {
     return subnetCandidates.filter((item) => item.isRecommended);
@@ -2224,6 +2309,14 @@ export function useWorkspaceApp() {
         });
       }
     }
+  }
+
+  async function maybeFinishOnboarding(nextSetupStatus) {
+    if (!needsOnboarding || !nextSetupStatus?.bootstrapCompleted) {
+      return nextSetupStatus;
+    }
+    await refreshAll();
+    return nextSetupStatus;
   }
 
   async function loadGitHubConfig(options = {}) {
@@ -3039,9 +3132,12 @@ export function useWorkspaceApp() {
           const retained = ensureArray(current.selectedRepos).filter((repoName) =>
             available.has(String(repoName).toLowerCase())
           );
+          const suggested = ensureArray(result?.config?.selectedRepos).filter((repoName) =>
+            available.has(String(repoName).toLowerCase())
+          );
           return {
             ...current,
-            selectedRepos: retained.length ? retained : selectableRepos
+            selectedRepos: retained.length ? retained : suggested
           };
         });
       });
@@ -3066,13 +3162,16 @@ export function useWorkspaceApp() {
       if (githubManifestState.pending) {
         await clearGitHubManifestPending({ silent: true });
       }
-      await Promise.all([
+      const [, , nextSetupStatus] = await Promise.all([
         loadGitHubConfig({ silent: true, pendingManifest: null }),
         loadGitHubDrift({ silent: true }),
         loadSetupStatus(session, { silent: true })
       ]);
+      await maybeFinishOnboarding(nextSetupStatus);
+      return result;
     } catch (err) {
       reportError(err, { title: t('toast.githubSaveFailed') });
+      return null;
     } finally {
       setGithubConfigSaving(false);
     }
@@ -3108,11 +3207,12 @@ export function useWorkspaceApp() {
       startTransition(() => {
         setGithubConfigResult(null);
       });
-      await Promise.all([
+      const [, , nextSetupStatus] = await Promise.all([
         loadGitHubConfig({ silent: true }),
         loadGitHubDrift({ silent: true }),
         loadSetupStatus(session, { silent: true })
       ]);
+      await maybeFinishOnboarding(nextSetupStatus);
     } catch (err) {
       reportError(err, { title: t('toast.githubPromoteFailed') });
     } finally {
@@ -3286,13 +3386,16 @@ export function useWorkspaceApp() {
         setOciAuthInspectResult(null);
         setOciAuthForm(blankOCIAuthForm());
       });
-      await Promise.all([
+      const [, nextSetupStatus] = await Promise.all([
         loadOCIAuthStatus(),
         loadSetupStatus(session, { silent: true }),
         loadSubnetCandidates({ silent: true })
       ]);
+      await maybeFinishOnboarding(nextSetupStatus);
+      return result;
     } catch (err) {
       reportError(err);
+      return null;
     } finally {
       setOciAuthSaving(false);
     }
@@ -3346,13 +3449,16 @@ export function useWorkspaceApp() {
         setOciRuntimeStatus(status);
         setOciRuntimeForm(blankOCIRuntimeForm(status.overrideSettings || status.effectiveSettings || {}));
       });
-      await Promise.all([
+      const [, , nextSetupStatus] = await Promise.all([
         loadSubnetCandidates({ silent: true }),
         loadOCIAuthStatus(),
         loadSetupStatus(session, { silent: true })
       ]);
+      await maybeFinishOnboarding(nextSetupStatus);
+      return status;
     } catch (err) {
       reportError(err);
+      return null;
     } finally {
       setOciRuntimeSaving(false);
     }
@@ -3524,7 +3630,12 @@ export function useWorkspaceApp() {
       return;
     }
 
-    if (nextStep !== currentOnboardingStep && !setupStatus.steps?.[nextStep]?.completed) {
+    const stepStates = setupStatus.bootstrapSteps || setupStatus.steps || {};
+    const currentStepIndex = SETUP_STEP_ORDER.indexOf(currentOnboardingStep);
+    const nextStepIndex = SETUP_STEP_ORDER.indexOf(nextStep);
+    const reachable = nextStepIndex >= 0 && nextStepIndex <= currentStepIndex;
+
+    if (!reachable && !stepStates[nextStep]?.completed) {
       return;
     }
 

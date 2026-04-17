@@ -746,7 +746,13 @@ export function GitHubConfigView({
     && !showManifestVerifyAction
     && !showManifestDiscoveryAction
   );
-  const showStageAction = savingBusy || selectedRepos.length > 0;
+  const canStageWithoutRepoSelection = onboardingMode && (
+    showRepositorySection
+    || Boolean(stagedConfig)
+    || ready
+    || Boolean(githubConfigResult)
+  );
+  const showStageAction = savingBusy || selectedRepos.length > 0 || canStageWithoutRepoSelection;
   const showPromoteAction = Boolean(onPromote && (promotingBusy || (stagedConfig && githubConfigStatus.stagedReady)));
   const showClearAction = clearingBusy || Boolean(stagedConfig);
   const showFooterActions = showFooterVerifyAction || showStageAction || showPromoteAction || showClearAction;
@@ -1028,8 +1034,9 @@ export function GitHubConfigView({
           );
         })}
       </CardContent>
-      <CardFooter className="border-t pt-4 text-sm text-muted-foreground">
-        {t('github.repositories.footer', { total: repositoryChoices.length, selected: selectedRepos.length })}
+      <CardFooter className="flex flex-col items-start gap-2 border-t pt-4 text-sm text-muted-foreground">
+        <p>{t('github.repositories.footer', { total: repositoryChoices.length, selected: selectedRepos.length })}</p>
+        {onboardingMode ? <p>{t('github.repositories.deferHint')}</p> : null}
       </CardFooter>
     </Card>
   ) : repositorySectionState.emptyState === 'multiActive' ? (
@@ -1120,10 +1127,16 @@ export function GitHubConfigView({
             </Button>
           ) : null}
           {showStageAction ? (
-            <Button type="button" variant="outline" onClick={() => void onSave()} disabled={busy || selectedRepos.length === 0} aria-busy={savingBusy}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void onSave()}
+              disabled={onboardingMode ? busy : busy || selectedRepos.length === 0}
+              aria-busy={savingBusy}
+            >
               <BusyButtonContent
                 busy={savingBusy}
-                label={t('github.button.stage')}
+                label={onboardingMode ? t('common.saveAndContinue') : t('github.button.stage')}
                 icon={KeyRoundIcon}
               />
             </Button>

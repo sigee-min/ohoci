@@ -142,15 +142,31 @@ export function createBlankOCIAuthStatus() {
 
 export function createBlankSetupStatus(session = null) {
   const passwordCompleted = !session?.mustChangePassword;
+  const passwordStep = {
+    completed: passwordCompleted,
+    missing: passwordCompleted ? [] : ['setup.missing.newPassword']
+  };
+  const bootstrapSteps = {
+    password: { ...passwordStep },
+    github: {
+      completed: false,
+      missing: []
+    },
+    oci: {
+      completed: false,
+      missing: []
+    }
+  };
+
   return {
     completed: false,
+    operationalReady: false,
     currentStep: passwordCompleted ? 'github' : 'password',
+    bootstrapCompleted: false,
+    bootstrapCurrentStep: passwordCompleted ? 'github' : 'password',
     updatedAt: '',
     steps: {
-      password: {
-        completed: passwordCompleted,
-        missing: passwordCompleted ? [] : ['setup.missing.newPassword']
-      },
+      password: { ...passwordStep },
       github: {
         completed: false,
         missing: []
@@ -159,7 +175,8 @@ export function createBlankSetupStatus(session = null) {
         completed: false,
         missing: []
       }
-    }
+    },
+    bootstrapSteps
   };
 }
 

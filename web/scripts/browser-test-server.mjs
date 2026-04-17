@@ -15,7 +15,7 @@ export async function startBrowserTestServer(options = {}) {
     extraPlugins = []
   } = options;
 
-  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'grunner-vite-browser-test-'));
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ohoci-vite-browser-test-'));
   const httpServer = createHttpServer();
   const vite = await createViteServer(createAppViteConfig({
     root,

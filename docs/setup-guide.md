@@ -55,7 +55,7 @@ What to watch for:
 
 ![GitHub step](/docs-assets/onboarding/github-step.png)
 
-The GitHub step stages GitHub App credentials, verifies installation access, and then narrows OhoCI to the repositories you explicitly choose.
+The GitHub step stages GitHub App credentials and verifies installation access first. You can defer the local repository allowlist until the restricted setup workspace opens after bootstrap.
 
 ### What to enter
 
@@ -78,7 +78,7 @@ If you are onboarding against github.com, OhoCI can create the GitHub App regist
 6. Install the new app on GitHub.
 7. After you approve the installation, GitHub sends you back to OhoCI with the returned installation. OhoCI restores the created app in the current session, fills the installation ID when GitHub returns it, and resumes installation discovery when it has enough data.
 8. If you manually return before install is done, OhoCI keeps that created app loaded so you can reopen the install page or check installations from the setup screen.
-9. Verify access, confirm the local repository allowlist, stage the config, then promote it when ready.
+9. Verify access and stage the config. You can confirm and narrow the local repository allowlist later in Settings before the dashboard unlocks.
 
 If GitHub returns without a single resolved installation, OhoCI keeps the created app loaded and you can finish by choosing the correct installation from the setup screen.
 
@@ -100,11 +100,18 @@ If a selected repository disappears from the installation, OhoCI flags that drif
 
 If more than one GitHub App is already active, Setup shows them as a compact **Active apps** list with the app name, install target, local repo count, and audit tags. Rotating credentials for the same routed app installation replaces the older live row automatically, while unrelated apps or installations stay listed side by side. Use that list to review routing coverage and audit labels before you stage or promote another one.
 
-### What "ready" means here
+### Bootstrap vs dashboard ready
 
-The GitHub step is ready only when all of these are true:
+Bootstrap can move past the GitHub step when these are true:
 
-- the active or staged App credentials verify successfully
+- the staged GitHub App credentials verify successfully
+- the installation is reachable and visible
+- a webhook secret is available
+
+The full dashboard still stays locked until all of these are true:
+
+- the active GitHub route is promoted and routable
+- the App credentials verify successfully
 - the installation is reachable and visible
 - a webhook secret is available
 - at least one repository is selected
@@ -115,7 +122,7 @@ If you are rotating GitHub credentials or moving to a different installation, st
 
 ![OCI step](/docs-assets/onboarding/oci-step.png)
 
-The OCI step has two tabs because OhoCI needs both a credential path and a launch target.
+The OCI step has two tabs because OhoCI needs both a credential path and a launch target before the full dashboard can unlock.
 
 ### Credential tab
 
@@ -133,7 +140,9 @@ The safe sequence is:
 2. Upload the private key file.
 3. Confirm the parsed profile, region, tenancy, and fingerprint.
 4. Run **Test connection**.
-5. Click **Save and use**.
+5. Click **Save and open Settings**.
+
+Saving the credential is enough to leave the guided bootstrap. OhoCI then keeps you on the restricted setup workspace until the launch target is also finished.
 
 ### Runtime target tab
 
@@ -167,7 +176,7 @@ If the cache backend becomes unavailable, workflows fall back to cache misses in
 You should see:
 
 - **Password** marked `Done`
-- **GitHub** marked `Done`
+- **GitHub** marked `Saved`, then later `Done` after you select repository scope and promote the live route
 - **OCI** marked `Done`
 - the setup counter reading `Ready`
 

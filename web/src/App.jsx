@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { LogInIcon } from 'lucide-react';
+import { BookOpenTextIcon, LogInIcon, LogOutIcon, RefreshCwIcon } from 'lucide-react';
 
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { BrandLockup } from '@/components/app/brand-logo';
@@ -396,6 +396,82 @@ function PublicDocsShell({ locationState, navigate }) {
   );
 }
 
+function DeferredSetupShell({ workspace }) {
+  const { t } = useI18n();
+
+  return (
+    <div className="min-h-svh bg-background">
+      <header className="border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6 lg:px-8">
+          <BrandLockup
+            className="min-w-0"
+            title={t('setup.pendingShell.title')}
+            subtitle={t('setup.pendingShell.subtitle')}
+            markClassName="size-11 rounded-[1.05rem] p-1.5"
+            subtitleClassName="max-w-2xl text-sm"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <LocaleSwitcher />
+            <Button variant="outline" size="sm" onClick={() => void workspace.refreshAll()} disabled={workspace.refreshing} aria-busy={workspace.refreshing}>
+              <RefreshCwIcon data-icon="inline-start" className={workspace.refreshing ? 'animate-spin' : undefined} />
+              {t('common.refresh')}
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/docs">
+                <BookOpenTextIcon data-icon="inline-start" />
+                {t('common.openDocs')}
+              </a>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => void workspace.handleLogout()}>
+              <LogOutIcon data-icon="inline-start" />
+              {t('common.signOut')}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col gap-6 px-4 py-5 md:px-6 md:py-6 lg:px-8">
+        <Card className="border bg-card/92 p-5">
+          <div className="space-y-2">
+            <h1 className="text-xl font-semibold tracking-tight">{t('header.finishSetup')}</h1>
+            <p className="max-w-3xl text-sm text-muted-foreground">{t('setup.pendingShell.body')}</p>
+          </div>
+        </Card>
+
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <SetupView
+            setupStatus={workspace.setupStatus}
+            githubSetupProps={buildGitHubSetupProps(workspace)}
+            ociAuthForm={workspace.ociAuthForm}
+            setOciAuthForm={workspace.setOciAuthForm}
+            onOCIFileUpload={workspace.handleOCIAuthFile}
+            onOCITest={workspace.handleOCIAuthTest}
+            onOCISave={workspace.handleOCIAuthSave}
+            onOCIClear={workspace.handleOCIAuthClear}
+            ociAuthInspecting={workspace.ociAuthInspecting}
+            ociAuthInspectResult={workspace.ociAuthInspectResult}
+            ociAuthTesting={workspace.ociAuthTesting}
+            ociAuthSaving={workspace.ociAuthSaving}
+            ociAuthClearing={workspace.ociAuthClearing}
+            ociAuthStatus={workspace.ociAuthStatus}
+            ociAuthResult={workspace.ociAuthResult}
+            ociRuntimeStatus={workspace.ociRuntimeStatus}
+            ociRuntimeForm={workspace.ociRuntimeForm}
+            setOciRuntimeForm={workspace.setOciRuntimeForm}
+            runtimeCatalog={workspace.runtimeCatalog}
+            runtimeCatalogValidation={workspace.runtimeCatalogValidation}
+            onRuntimeCatalogRefresh={workspace.handleRuntimeCatalogRefresh}
+            onOCIRuntimeSave={workspace.handleOCIRuntimeSave}
+            onOCIRuntimeClear={workspace.handleOCIRuntimeClear}
+            ociRuntimeSaving={workspace.ociRuntimeSaving}
+            ociRuntimeClearing={workspace.ociRuntimeClearing}
+          />
+        </Suspense>
+      </main>
+    </div>
+  );
+}
+
 function AuthenticatedApp() {
   const { t } = useI18n();
   const workspace = useWorkspaceApp();
@@ -439,6 +515,10 @@ function AuthenticatedApp() {
         </SetupOnboardingView>
       </Suspense>
     );
+  }
+
+  if (!workspace.setupStatus.completed) {
+    return <DeferredSetupShell workspace={workspace} />;
   }
 
   return (
