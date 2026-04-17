@@ -1,0 +1,242 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  color-scheme: light;
+  --background: oklch(0.989 0.002 92);
+  --foreground: oklch(0.29 0.008 92);
+  --card: oklch(0.996 0.002 92);
+  --card-foreground: oklch(0.29 0.008 92);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.29 0.008 92);
+  --primary: oklch(0.33 0.012 92);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.972 0.003 92);
+  --secondary-foreground: oklch(0.33 0.012 92);
+  --muted: oklch(0.972 0.003 92);
+  --muted-foreground: oklch(0.56 0.009 92);
+  --accent: oklch(0.962 0.004 88);
+  --accent-foreground: oklch(0.31 0.01 92);
+  --destructive: oklch(0.62 0.19 28);
+  --border: oklch(0.914 0.005 92);
+  --input: oklch(0.914 0.005 92);
+  --ring: oklch(0.72 0.014 92);
+  --chart-1: oklch(0.76 0.03 90);
+  --chart-2: oklch(0.68 0.02 80);
+  --chart-3: oklch(0.58 0.015 70);
+  --chart-4: oklch(0.49 0.01 60);
+  --chart-5: oklch(0.4 0.008 55);
+  --radius: 0.875rem;
+  --sidebar: oklch(0.982 0.002 92);
+  --sidebar-foreground: oklch(0.29 0.008 92);
+  --sidebar-primary: oklch(0.33 0.012 92);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.968 0.003 92);
+  --sidebar-accent-foreground: oklch(0.29 0.008 92);
+  --sidebar-border: oklch(0.914 0.005 92);
+  --sidebar-ring: oklch(0.72 0.014 92);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at top left, oklch(0.31 0.01 92 / 0.035), transparent 28rem),
+      linear-gradient(180deg, oklch(1 0 0 / 0.72), oklch(0.982 0.002 92 / 0.94));
+    background-attachment: fixed;
+  }
+
+  #root {
+    min-height: 100svh;
+  }
+
+  button:not(:disabled):not([aria-disabled="true"]),
+  [role="button"]:not(:disabled):not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .docs-prose {
+    @apply mx-auto w-full max-w-3xl text-[15px] leading-7 text-foreground;
+  }
+
+  .docs-prose > :first-child {
+    margin-top: 0;
+  }
+
+  .docs-prose > :last-child {
+    margin-bottom: 0;
+  }
+
+  .docs-heading {
+    scroll-margin-top: 6rem;
+    @apply font-semibold tracking-tight text-foreground;
+  }
+
+  .docs-heading-1 {
+    @apply mt-0 mb-5 text-3xl sm:text-4xl;
+  }
+
+  .docs-heading-2 {
+    @apply mt-10 mb-4 border-t pt-8 text-2xl;
+  }
+
+  .docs-heading-3 {
+    @apply mt-8 mb-3 text-xl;
+  }
+
+  .docs-heading-4 {
+    @apply mt-6 mb-2 text-lg;
+  }
+
+  .docs-heading-5 {
+    @apply mt-5 mb-2 text-base;
+  }
+
+  .docs-heading-6 {
+    @apply mt-5 mb-2 text-sm uppercase tracking-[0.12em] text-muted-foreground;
+  }
+
+  .docs-prose p,
+  .docs-prose ul,
+  .docs-prose ol,
+  .docs-prose table,
+  .docs-prose blockquote,
+  .docs-prose pre {
+    @apply my-4;
+  }
+
+  .docs-prose strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .docs-prose em {
+    @apply italic;
+  }
+
+  .docs-prose a {
+    @apply font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary;
+  }
+
+  .docs-prose img {
+    @apply my-6 block w-full rounded-2xl border bg-card object-cover shadow-sm;
+  }
+
+  .docs-prose ul,
+  .docs-prose ol {
+    @apply space-y-2 pl-6;
+  }
+
+  .docs-prose ul {
+    list-style: disc;
+  }
+
+  .docs-prose ol {
+    list-style: decimal;
+  }
+
+  .docs-prose li > ul,
+  .docs-prose li > ol {
+    @apply mt-2;
+  }
+
+  .docs-prose blockquote {
+    @apply rounded-r-2xl border-l-4 border-border bg-muted/45 px-4 py-3 text-muted-foreground;
+  }
+
+  .docs-prose :not(pre) > code {
+    @apply rounded-md bg-muted px-1.5 py-0.5 text-[0.9em] font-medium text-foreground;
+  }
+
+  .docs-prose pre {
+    @apply overflow-x-auto rounded-2xl border bg-muted/55 p-4 text-sm leading-6 text-foreground;
+  }
+
+  .docs-prose pre code {
+    background: transparent;
+    padding: 0;
+  }
+
+  .docs-prose table {
+    @apply w-full overflow-hidden rounded-2xl border text-sm;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .docs-prose thead {
+    @apply bg-muted/55;
+  }
+
+  .docs-prose th,
+  .docs-prose td {
+    @apply border-b px-4 py-3 text-left align-top;
+  }
+
+  .docs-prose tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .docs-prose th {
+    @apply font-semibold text-foreground;
+  }
+
+  .docs-prose hr {
+    @apply my-8 border-border;
+  }
+}

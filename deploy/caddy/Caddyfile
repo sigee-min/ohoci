@@ -1,0 +1,5 @@
+{$OHOCI_PUBLIC_HOSTNAME} {
+  encode gzip zstd
+
+  reverse_proxy app:8080
+}

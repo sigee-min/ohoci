@@ -1,0 +1,135 @@
+# Example OhoCI deployment for Kubernetes with an external or in-cluster MySQL database.
+# Review and replace every placeholder before applying this manifest.
+# Delete the Namespace object if your platform team manages namespaces separately.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ohoci
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ohoci-secrets
+  namespace: ohoci
+type: Opaque
+stringData:
+  OHOCI_SESSION_SECRET: "replace-with-32-plus-random-bytes"
+  # If you leave OHOCI_DATA_ENCRYPTION_KEY empty, OhoCI falls back to OHOCI_SESSION_SECRET.
+  # Keep a distinct key in production so stored secrets do not reuse the session secret.
+  OHOCI_DATA_ENCRYPTION_KEY: "replace-with-a-different-32-plus-random-bytes"
+  # OhoCI expects a mysql:// URL when OHOCI_DATABASE_URL is set.
+  # Point this at your MySQL Service DNS name or managed MySQL endpoint.
+  OHOCI_DATABASE_URL: "mysql://ohoci:replace-with-mysql-password@mysql-primary.database.svc.cluster.local:3306/ohoci?charset=utf8mb4&collation=utf8mb4_unicode_ci"
+  OHOCI_GITHUB_WEBHOOK_SECRET: "replace-with-github-webhook-secret"
+  OHOCI_GITHUB_APP_PRIVATE_KEY: |
+    <paste-your-github-app-private-key-here>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ohoci-config
+  namespace: ohoci
+data:
+  OHOCI_ENV: "production"
+  OHOCI_HTTP_ADDRESS: ":8080"
+  OHOCI_PUBLIC_BASE_URL: "https://ohoci.example.com"
+  # Set this to the CIDRs that actually reach the pod after ingress or load balancer hops.
+  OHOCI_TRUSTED_PROXY_CIDRS: "10.0.0.0/24"
+  # Restrict operator access to your admin network ranges.
+  OHOCI_ADMIN_ALLOW_CIDRS: "203.0.113.0/24"
+  # Restrict webhook access to the ranges that should be able to reach /webhooks/github.
+  OHOCI_WEBHOOK_ALLOW_CIDRS: "203.0.113.0/24"
+  OHOCI_GITHUB_API_BASE_URL: "https://api.github.com"
+  OHOCI_GITHUB_APP_ID: "123456"
+  OHOCI_GITHUB_INSTALLATION_ID: "987654321"
+  OHOCI_GITHUB_ALLOWED_REPOS: "example/repo-one,example/repo-two"
+  # Supported bootstrap values are fake or instance_principal only.
+  # Keep instance_principal only when this pod can obtain OCI instance principal credentials.
+  # If you later save an OCI API-key credential in the OhoCI UI, that saved credential takes precedence.
+  OHOCI_OCI_AUTH_MODE: "instance_principal"
+  OHOCI_OCI_COMPARTMENT_OCID: "ocid1.compartment.oc1..replace-me"
+  OHOCI_OCI_AVAILABILITY_DOMAIN: "Uocm:PHX-AD-1"
+  OHOCI_OCI_SUBNET_OCID: "ocid1.subnet.oc1.phx.replace-me"
+  OHOCI_OCI_NSG_OCIDS: "ocid1.networksecuritygroup.oc1.phx.replace-me"
+  OHOCI_OCI_IMAGE_OCID: "ocid1.image.oc1.phx.replace-me"
+  OHOCI_OCI_ASSIGN_PUBLIC_IP: "false"
+  OHOCI_RUNNER_DOWNLOAD_BASE_URL: "https://github.com/actions/runner/releases/download"
+  OHOCI_RUNNER_VERSION: "2.325.0"
+  OHOCI_RUNNER_USER: "runner"
+  OHOCI_RUNNER_WORKDIR: "/home/runner/actions-runner"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ohoci
+  namespace: ohoci
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ohoci
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ohoci
+    spec:
+      containers:
+        - name: ohoci
+          # Pin to a digest in production once you validate an image release.
+          image: ghcr.io/sigee-min/ohoci:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ohoci-config
+            - secretRef:
+                name: ohoci-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ohoci
+  namespace: ohoci
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ohoci
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ohoci
+  namespace: ohoci
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ohoci.example.com
+      secretName: ohoci-tls
+  rules:
+    - host: ohoci.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ohoci
+                port:
+                  number: 80

@@ -1,0 +1,32 @@
+services:
+  app:
+    image: ${OHOCI_IMAGE:-ghcr.io/sigee-min/ohoci:latest}
+    env_file:
+      - ./.env
+    environment:
+      OHOCI_UI_DIR: /var/lib/ohoci/ui
+      OHOCI_SQLITE_PATH: /var/lib/ohoci/data/ohoci.db
+    volumes:
+      - app-data:/var/lib/ohoci/data
+      - ../secrets:/run/secrets:ro
+    expose:
+      - "8080"
+
+  proxy:
+    image: caddy:2.10-alpine
+    depends_on:
+      - app
+    environment:
+      OHOCI_PUBLIC_HOSTNAME: ${OHOCI_PUBLIC_HOSTNAME:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  app-data:
+  caddy-data:
+  caddy-config:

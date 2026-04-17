@@ -1,0 +1,35 @@
+{
+  "name": "ohoci-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/generate-docs.mjs && vite",
+    "build": "node scripts/generate-docs.mjs && vite build",
+    "preview": "vite preview",
+    "qa:visual": "node scripts/visual-qa.mjs",
+    "pretest:docs": "node scripts/generate-docs.mjs",
+    "test:docs": "node --test --test-timeout=30000 --test-force-exit scripts/github-manifest-form.test.mjs scripts/generate-docs.test.mjs scripts/docs-utils.test.mjs scripts/docs-browser.test.mjs scripts/warm-surface-contract.test.mjs scripts/warm-browser-smoke.test.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@tailwindcss/vite": "^4.2.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.7.0",
+    "radix-ui": "^1.4.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "shadcn": "^4.1.2",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.4.1",
+    "playwright": "^1.59.1",
+    "vite": "^5.4.19"
+  }
+}

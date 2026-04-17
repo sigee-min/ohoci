@@ -1,0 +1,46 @@
+# Local environment
+.env
+.env.local
+.env.*.local
+/secrets/
+
+# Go build artifacts
+/ohoci
+*.test
+*.out
+coverage.out
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+internal/httpapi/ui/
+**/artifacts/
+*.log
+*.tmp
+*.temp
+/tmp/
+/coverage/
+*.coverprofile
+*.prof
+
+# Node / Vite
+/node_modules/
+/web/node_modules/
+/web/dist/
+/web/.vite/
+/web/.cache/
+/web/playwright-report/
+/web/test-results/
+/web/src/generated/
+/.npm/
+/.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
