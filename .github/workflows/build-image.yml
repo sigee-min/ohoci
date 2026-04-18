@@ -1,21 +1,21 @@
-name: Build Image
+name: Publish GHCR image
 
 on:
-  workflow_call:
-    outputs:
-      image_reference:
-        description: Immutable image reference for the OhoCI runtime image.
-        value: ${{ jobs.build.outputs.image_reference }}
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: publish-ghcr-image-main
+  cancel-in-progress: true
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
-    outputs:
-      image_reference: ${{ steps.collect.outputs.image_reference }}
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: sigee-min/ohoci
@@ -24,15 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Require main branch for image publication
-        run: |
-          set -euo pipefail
-          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            echo "Release image publication requires refs/heads/main; got ${GITHUB_REF}" >&2
-            exit 1
-          fi
-
-      - name: Resolve image reference
+      - name: Resolve image tags
         id: tags
         run: |
           set -euo pipefail
@@ -65,22 +57,18 @@ jobs:
         run: cp deploy/.dockerignore .dockerignore
 
       - name: Build and publish image
-        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./deploy/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/sigee-min/ohoci:sha-${{ steps.tags.outputs.short_sha }}
+          tags: |
+            ghcr.io/sigee-min/ohoci:latest
+            ghcr.io/sigee-min/ohoci:main
+            ghcr.io/sigee-min/ohoci:sha-${{ steps.tags.outputs.short_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Collect image reference
-        id: collect
-        run: |
-          set -euo pipefail
-          echo "image_reference=ghcr.io/sigee-min/ohoci@${{ steps.build.outputs.digest }}" >> "${GITHUB_OUTPUT}"
 
       - name: Clean temporary root .dockerignore
         if: ${{ always() }}
