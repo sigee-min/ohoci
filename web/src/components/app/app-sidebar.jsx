@@ -135,6 +135,7 @@ export function AppSidebar({ view, setView, policies, runners, runnerImages, job
         <BrandLockup
           className="rounded-lg px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
           markClassName="size-10 rounded-xl border-sidebar-border/80 bg-sidebar-accent/75 p-1.5"
+          subtitle={null}
           titleClassName="group-data-[collapsible=icon]:hidden"
           subtitleClassName="group-data-[collapsible=icon]:hidden"
         />

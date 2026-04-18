@@ -10,7 +10,7 @@ summary: Use the main workspace views after setup is complete and know where to 
 
 # Getting started
 
-After onboarding finishes, OhoCI opens the authenticated workspace. The app keeps setup, policies, live activity, and billing observability in one shell so you can move from readiness checks to runner operations without switching tools.
+After setup finishes, OhoCI opens the authenticated workspace. The app keeps setup, policies, live activity, and billing observability in one shell so you can move from readiness checks to runner operations without switching tools.
 
 ## Start with the workspace map
 
@@ -25,7 +25,7 @@ After onboarding finishes, OhoCI opens the authenticated workspace. The app keep
 | Events | Webhook deliveries, control-plane logs, and failure details. |
 | Settings | GitHub routing and staged settings, local repo allowlist, OCI credential storage, and launch defaults. |
 
-## Revisit Settings after onboarding
+## Revisit Settings after setup
 
 ![Settings workspace](/docs-assets/workspace/settings.png)
 
@@ -54,7 +54,7 @@ OhoCI exposes the same curated docs in two places:
 - public docs at `/docs` without authentication
 - the in-app **Docs** view after sign-in
 
-That means operators can keep setup instructions open publicly while they finish onboarding inside the authenticated shell.
+That means operators can keep setup instructions open publicly while they finish setup inside the authenticated shell.
 
 ## Language support
 
@@ -63,11 +63,11 @@ The UI now supports two locales:
 - English (`en`) as the default
 - Korean (`ko`) as an optional operator-selected locale
 
-The language switch affects the app chrome, onboarding flow, and docs navigation UI. The markdown document body itself remains English-first in this version.
+The language switch affects the app chrome, setup flow, and docs navigation UI. The markdown document body itself remains English-first in this version.
 
 ## Recommended next reads
 
-- Start with [Setup guide](./setup-guide.md) if onboarding is not complete yet.
+- Start with [Setup guide](./setup-guide.md) if setup is not complete yet.
 - Read [Policies and capacity](./policies-and-capacity.md) before creating label rules.
 - Read [Runner Images](./runner-images.md) if the base OCI image needs extra tools or a repeatable bake workflow.
 - Read [Operations and billing](./operations-and-billing.md) to understand runtime and cost signals.

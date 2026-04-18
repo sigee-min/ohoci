@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "qa:visual": "node scripts/visual-qa.mjs",
     "pretest:docs": "node scripts/generate-docs.mjs",
-    "test:docs": "node --test --test-timeout=30000 --test-force-exit scripts/github-manifest-form.test.mjs scripts/generate-docs.test.mjs scripts/docs-utils.test.mjs scripts/docs-browser.test.mjs scripts/warm-surface-contract.test.mjs scripts/warm-browser-smoke.test.mjs"
+    "test:docs": "node --test --test-concurrency=1 --test-timeout=30000 --test-force-exit scripts/github-manifest-form.test.mjs scripts/generate-docs.test.mjs scripts/docs-utils.test.mjs scripts/docs-browser.test.mjs scripts/setup-flow.test.mjs scripts/setup-guide-contract.test.mjs scripts/setup-browser-smoke.test.mjs scripts/warm-surface-contract.test.mjs scripts/warm-browser-smoke.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",

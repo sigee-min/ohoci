@@ -5,12 +5,12 @@ title: Setup guide
 slug: setup-guide
 order: 10
 section: Start here
-summary: Finish password, GitHub, and OCI onboarding in the right order before the dashboard unlocks.
+summary: Finish the five first-run setup tasks that unlock jobs and the main workspace.
 ---
 
 # Setup guide
 
-OhoCI blocks the main dashboard until the first-run setup is complete. The onboarding order is fixed so the control plane always has a valid admin password, a verified GitHub source, and a usable OCI launch target before it accepts runner work.
+OhoCI blocks jobs and the main workspace until the first-run setup is complete. After sign-in, the app stays in one setup shell and walks through the same five tasks every time.
 
 This guide assumes one active OhoCI instance. In this version there is no distributed locking or multi-replica coordination.
 
@@ -19,27 +19,25 @@ This guide assumes one active OhoCI instance. In this version there is no distri
 | Item | Why it matters |
 | --- | --- |
 | Local admin access | You sign in with the local administrator account first. |
-| A GitHub App registration and installation | OhoCI stages the app config, verifies the installation, and only manages repositories that are both installed and locally selected. |
-| OCI config and private key | The OCI step reads your profile details from the config, then stores only the derived credential material it needs. |
+| A GitHub App registration and installation | OhoCI verifies the route first, then only manages repositories that are both installed and selected locally. |
+| OCI config and private key | The OCI credential task stores the access path the control plane needs. |
+| Repository choices | Jobs stay locked until OhoCI has at least one selected repository. |
 | OCI launch target values | You need a compartment, availability domain, subnet, and image before runner launches can be marked ready. |
-| Optional Object Storage bucket details | Only needed if you plan to enable experimental `actions/cache` compatibility for OhoCI-managed Linux runners. |
 
-## Sign in and enter onboarding
+## Sign in and enter setup
 
 Use the bootstrap account once, then replace it immediately:
 
 - username: `admin`
 - password: `admin`
 
-After the first successful sign-in, OhoCI does **not** drop you into the dashboard. It opens the onboarding rail and keeps the later steps locked until the current required step is saved.
+After the first successful sign-in, OhoCI does **not** drop you into the dashboard. It opens the setup shell, shows one current task, and keeps the later tasks read-only until the current blocking task is saved.
 
 If your operators prefer Korean, switch the UI locale after the app loads. English remains the default locale for the control plane.
 
-## Step 1: replace the bootstrap password
+## Task 1: Change the admin password
 
-![Password step](/docs-assets/onboarding/password-step.png)
-
-The password step is intentionally simple:
+This step is intentionally simple:
 
 1. Enter the current bootstrap password.
 2. Choose the new long-lived admin password.
@@ -47,24 +45,21 @@ The password step is intentionally simple:
 
 What to watch for:
 
-- the rail should mark **Password** as `Done`
-- the next step should unlock automatically
-- the "Still missing" panel should stop listing `new password`
+- the current task should move to **Connect GitHub App**
+- the checklist should show password as complete
+- the setup shell should stay in place instead of switching frames
 
-## Step 2: connect GitHub
+## Task 2: Connect the GitHub App
 
-![GitHub step](/docs-assets/onboarding/github-step.png)
-
-The GitHub step stages GitHub App credentials and verifies installation access first. You can defer the local repository allowlist until the restricted setup workspace opens after bootstrap.
+The first GitHub task is route verification only. OhoCI keeps the setup screen focused on connection and activation, then moves repository selection into the next task.
 
 ### What to enter
 
-- save the GitHub App credentials and installation binding for the environment you want OhoCI to use, or stage another credential set before promotion
-- saving directly to an already-live routed app installation automatically retires the older live row for that same GitHub API URL + App ID + installation ID
-- add an optional operator-facing app name and audit tags if you want a clearer label in OhoCI
+- choose **Create new app** or **Use existing app**
 - leave **GitHub API URL** empty unless you are pointing to a GitHub Enterprise API base URL
 - point the app webhook at OhoCI's shared webhook endpoint
-- verify the installation before promoting any staged config
+- click **Verify GitHub App**
+- click **Save GitHub access**
 
 ### Using the github.com manifest helper
 
@@ -78,118 +73,87 @@ If you are onboarding against github.com, OhoCI can create the GitHub App regist
 6. Install the new app on GitHub.
 7. After you approve the installation, GitHub sends you back to OhoCI with the returned installation. OhoCI restores the created app in the current session, fills the installation ID when GitHub returns it, and resumes installation discovery when it has enough data.
 8. If you manually return before install is done, OhoCI keeps that created app loaded so you can reopen the install page or check installations from the setup screen.
-9. Verify access and stage the config. You can confirm and narrow the local repository allowlist later in Settings before the dashboard unlocks.
+9. Verify access and save the route. Repository selection happens in the next setup task.
 
 If GitHub returns without a single resolved installation, OhoCI keeps the created app loaded and you can finish by choosing the correct installation from the setup screen.
 
 The manifest helper is intentionally disabled when you set a non-default GitHub API URL. In this version, GitHub Enterprise Server-style API endpoints still require manual GitHub App registration.
 
-### How repository selection works
+### What happens after save
 
-- GitHub exposes the repositories visible to the installation
-- OhoCI lets you choose a local allowlist from that installed set
-- the effective managed scope is the intersection of the installation scope and the local allowlist
+- if there is no live GitHub route yet, OhoCI activates the verified route automatically
+- if activation still needs one more pass, stay on the same task and click **Activate GitHub Route**
+- repository selection does not appear until this route task is complete
 
-OhoCI also keeps watching for scope drift after setup:
+## Task 3: Save the OCI credential
 
-- installation webhook updates can change what GitHub says the app can see
-- a background reconcile runs every 15 minutes even when no webhook changed recently
-- local repository selections are never auto-pruned just because GitHub visibility changed
+The first OCI task stores the credential only. Runtime placement happens later.
 
-If a selected repository disappears from the installation, OhoCI flags that drift for operator review instead of silently deleting the local selection. If new repositories become visible, OhoCI shows them as newly visible until you choose whether to add them locally.
+Use these fields:
 
-If more than one GitHub App is already active, Setup shows them as a compact **Active apps** list with the app name, install target, local repo count, and audit tags. Rotating credentials for the same routed app installation replaces the older live row automatically, while unrelated apps or installations stay listed side by side. Use that list to review routing coverage and audit labels before you stage or promote another one.
+- **Credential name**
+- **Profile name**
+- **OCI config file** and **Private key file**, or the matching paste fields
+- **Passphrase** when the private key needs it
+- **Test connection**
+- **Save OCI credential**
 
-### Bootstrap vs dashboard ready
+What to watch for:
 
-Bootstrap can move past the GitHub step when these are true:
+- the next task should move to **Choose repositories**
+- the setup shell should still be the same shell
+- runtime placement fields should still be hidden at this point
 
-- the staged GitHub App credentials verify successfully
-- the installation is reachable and visible
-- a webhook secret is available
+## Task 4: Choose repositories
 
-The full dashboard still stays locked until all of these are true:
+This task only shows the repository chooser and one save action.
 
-- the active GitHub route is promoted and routable
-- the App credentials verify successfully
-- the installation is reachable and visible
-- a webhook secret is available
-- at least one repository is selected
+The rule is simple:
 
-If you are rotating GitHub credentials or moving to a different installation, stage the new credential set, confirm it is ready, then promote it. Promotion automatically retires the previous live row for that same GitHub API URL + App ID + installation ID. Different routed apps or installations stay active. The staged config must use a different webhook secret from any active config.
+- pick at least one repository from the installation-visible list
+- click **Save Repository Scope**
+- jobs do not open until at least one repository is selected
 
-## Step 3: configure OCI access and launch settings
+OhoCI only manages the intersection of:
 
-![OCI step](/docs-assets/onboarding/oci-step.png)
+- the repositories the GitHub App installation can see
+- the repositories you select locally here
 
-The OCI step has two tabs because OhoCI needs both a credential path and a launch target before the full dashboard can unlock.
+## Task 5: Save the OCI launch target
 
-### Credential tab
-
-Use the **Credential** tab to save the OCI identity material:
-
-- **Credential name** is your operator-facing label for the saved credential
-- **Profile name** usually stays `DEFAULT` unless your OCI config uses another profile
-- **OCI config file** and **Private key file** can be uploaded directly
-- **Parsed config** and **Private key PEM** let you review or paste the values manually
-- **Passphrase** stays empty unless your private key is protected
-
-The safe sequence is:
-
-1. Upload the OCI config file.
-2. Upload the private key file.
-3. Confirm the parsed profile, region, tenancy, and fingerprint.
-4. Run **Test connection**.
-5. Click **Save and open Settings**.
-
-Saving the credential is enough to leave the guided bootstrap. OhoCI then keeps you on the restricted setup workspace until the launch target is also finished.
-
-### Runtime target tab
-
-Use the **Runtime target** tab to tell OhoCI where runners should launch:
+This task is the first place that runner launch placement is configured. Keep it minimal:
 
 - enter **Compartment OCID**
 - click **Refresh catalog**
 - choose an **Availability domain**
 - choose a **Subnet OCID**
 - choose an **Image OCID**
-- optionally add **NSG OCIDs**
 - decide whether to enable **Assign public IP**
+- click **Save launch target**
 
 The image you choose here is the current default runtime image. Later, [Runner Images](./runner-images.md) can replace that default by promoting a verified baked image.
 
 OhoCI marks launch setup ready only when the compartment, subnet, and image are all present and still valid against the latest OCI catalog.
 
-### Optional experimental cache compatibility
-
-The runtime target also carries the optional cache compatibility settings backed by OCI Object Storage.
-
-- enable it only for OhoCI-managed Linux runners
-- provide the Object Storage bucket and retention days
-- keep the runner version at `2.327.1` or newer
-- treat it as experimental in this version
-
-If the cache backend becomes unavailable, workflows fall back to cache misses instead of failing cache steps outright.
-
 ## Before you leave setup
 
 You should see:
 
-- **Password** marked `Done`
-- **GitHub** marked `Saved`, then later `Done` after you select repository scope and promote the live route
-- **OCI** marked `Done`
-- the setup counter reading `Ready`
+- all five tasks marked complete in the checklist
+- the setup shell disappear after the launch target is saved
+- the authenticated workspace open automatically
 
-If the dashboard still does not unlock, use the rail support panel and the "Still missing" message as the source of truth for the next field to fix.
+If the workspace does not unlock, use the current task title and the checklist as the source of truth for the next missing item.
 
-The onboarding rail, header, and setup actions follow the selected UI locale, but the guide text here remains English-first in this version.
+Advanced route operations, repository review, and OCI tuning stay in **Settings** after setup is complete.
 
 ## What to do next
 
-Once onboarding is complete:
+Once setup is complete:
 
-1. open [Getting started](./getting-started.md) for the workspace tour
-2. create one policy from [Policies and capacity](./policies-and-capacity.md)
-3. if you plan to use warm capacity, start with one repository allowlist target and a single idle runner expectation
-4. if the base OCI image still needs packages or tools, prepare it in [Runner Images](./runner-images.md)
-5. send a single test workflow job before scaling further
+1. open [Revisit Settings after setup](./getting-started.md#revisit-settings-after-setup) if you want to review GitHub or OCI settings again
+2. open [Getting started](./getting-started.md) for the workspace tour
+3. create one policy from [Policies and capacity](./policies-and-capacity.md)
+4. if you plan to use warm capacity, start with one repository allowlist target and a single idle runner expectation
+5. if the base OCI image still needs packages or tools, prepare it in [Runner Images](./runner-images.md)
+6. send a single test workflow job before scaling further

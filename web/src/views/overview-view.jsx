@@ -1,6 +1,6 @@
 import { ActivityList, EmptyBlock, ErrorBlock, LoadingBlock, StatusBadge } from '@/components/app/display-primitives';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatTranslatedList, useI18n } from '@/i18n';
@@ -534,10 +534,7 @@ export function OverviewView({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
         <Card className="border bg-card/95">
           <CardHeader className="border-b">
-            <div className="flex flex-col gap-1">
-              <CardTitle>{t('overview.title')}</CardTitle>
-              <CardDescription>{t('overview.description')}</CardDescription>
-            </div>
+            <CardTitle>{t('overview.title')}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-5">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)]">
@@ -563,9 +560,8 @@ export function OverviewView({
                 <>
                   <div className="flex flex-col gap-5">
                     <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-2">
+                      <div>
                         <p className="text-3xl font-semibold tracking-tight text-balance">{displayedOverviewState.title}</p>
-                        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{displayedOverviewState.description}</p>
                       </div>
 
                       <div className={`rounded-xl border px-4 py-4 ${incidentToneClassName(displayedDecisionModel.incident.tone)}`}>
@@ -639,10 +635,7 @@ export function OverviewView({
                   </div>
 
                   <div className="flex flex-col gap-4 rounded-xl border bg-muted/15 p-4">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">{t('overview.decision.title')}</p>
-                      <p className="text-sm text-muted-foreground">{t('overview.decision.description')}</p>
-                    </div>
+                    <p className="text-sm font-medium">{t('overview.decision.title')}</p>
                     <DecisionActionCard
                       emphasis="primary"
                       title={t('overview.decision.primaryLabel')}
@@ -664,14 +657,10 @@ export function OverviewView({
         <Card className="border bg-card/95">
           <CardHeader className="border-b">
             <CardTitle>{t('overview.setup.title')}</CardTitle>
-            <CardDescription>{t('overview.setup.description')}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-4">
             <div className="flex items-start justify-between gap-3 rounded-xl bg-muted/20 px-4 py-3">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">{t('overview.setup.access.label')}</p>
-                <p className="text-sm text-muted-foreground">{t('overview.setup.access.note')}</p>
-              </div>
+              <p className="text-sm font-medium">{t('overview.setup.access.label')}</p>
               <span className="text-sm font-medium">
                 {summarizeOCIAuthMode(ociAuthStatus.effectiveMode || ociAuthStatus.defaultMode, t)}
               </span>
@@ -723,10 +712,7 @@ export function OverviewView({
 
       <Card className="border bg-card/95">
         <CardHeader className="border-b">
-          <div className="flex flex-col gap-1">
-            <CardTitle>{t('overview.billing.title')}</CardTitle>
-            <CardDescription>{t('overview.billing.description')}</CardDescription>
-          </div>
+          <CardTitle>{t('overview.billing.title')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-5 pt-5">
           {billingReport.loading ? (
@@ -774,10 +760,7 @@ export function OverviewView({
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">{t('overview.billing.attribution.title')}</p>
-                      <p className="text-sm text-muted-foreground">{t('overview.billing.attribution.description')}</p>
-                    </div>
+                    <p className="text-sm font-medium">{t('overview.billing.attribution.title')}</p>
                     <div className="grid gap-px overflow-hidden rounded-2xl border bg-border/60">
                       {billingAttributionStats.map((item, index) => (
                         <div
@@ -901,10 +884,7 @@ export function OverviewView({
           <Tabs defaultValue="runners" className="gap-0">
             <CardHeader className="border-b">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex flex-col gap-1">
-                  <CardTitle>{t('overview.activity.title')}</CardTitle>
-                  <CardDescription>{t('overview.activity.description')}</CardDescription>
-                </div>
+                <CardTitle>{t('overview.activity.title')}</CardTitle>
                 <TabsList variant="line">
                   <TabsTrigger value="runners">{t('overview.activity.tab.runners')}</TabsTrigger>
                   <TabsTrigger value="jobs">{t('overview.activity.tab.jobs')}</TabsTrigger>
@@ -959,7 +939,6 @@ export function OverviewView({
         <Card className="border bg-card/95">
           <CardHeader className="border-b">
             <CardTitle>{t('overview.subnets.title')}</CardTitle>
-            <CardDescription>{t('overview.subnets.description')}</CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             {recommendedSubnets.length === 0 ? (

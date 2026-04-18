@@ -188,6 +188,9 @@ export function buildGitHubConfigFormFromStatus(payload = {}) {
 }
 
 export function resolveGitHubRepositoryChoicesSource(result = null, status = {}) {
+  const activeConfigs = resolveGitHubActiveConfigs(status);
+  const allowRuntimeFallback = activeConfigs.length <= 1;
+
   if (Array.isArray(result?.repositories)) {
     return result.repositories;
   }
@@ -198,6 +201,14 @@ export function resolveGitHubRepositoryChoicesSource(result = null, status = {})
 
   if (Array.isArray(status?.stagedConfig?.installationRepositories)) {
     return status.stagedConfig.installationRepositories;
+  }
+
+  if (allowRuntimeFallback && Array.isArray(status?.activeConfig?.installationRepositories)) {
+    return status.activeConfig.installationRepositories;
+  }
+
+  if (allowRuntimeFallback && Array.isArray(status?.effectiveConfig?.installationRepositories)) {
+    return status.effectiveConfig.installationRepositories;
   }
 
   return [];

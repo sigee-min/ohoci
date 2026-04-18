@@ -4,6 +4,7 @@ import { toastError } from '@/components/ui/toaster';
 import { api } from '@/lib/api';
 import { useI18n } from '@/i18n';
 import { normalizeOperatorErrorText, normalizeOperatorList, normalizeOperatorText } from '@/lib/operator-text';
+import { buildSetupFlow } from '@/lib/setup-flow';
 import {
   createBlankBillingReportState,
   createBlankBillingGuardrailsState,
@@ -23,6 +24,7 @@ import {
   createBlankOCIAuthStatus,
   createBlankOCIRuntimeStatus,
   createBlankSetupStatus,
+  SETUP_FLOW_TASK_ORDER,
   SETUP_STEP_ORDER
 } from '@/lib/workspace-constants';
 import {
@@ -403,19 +405,6 @@ function hasOCIBootstrapState(authStatus = {}, runtimeStatus = {}) {
   );
 }
 
-function deriveCurrentOnboardingStep({ passwordComplete, githubComplete, ociComplete }) {
-  if (!passwordComplete) {
-    return 'password';
-  }
-  if (!githubComplete) {
-    return 'github';
-  }
-  if (!ociComplete) {
-    return 'oci';
-  }
-  return 'oci';
-}
-
 function normalizeSetupStatus(payload = {}, sessionData = null) {
   const base = createBlankSetupStatus(sessionData);
   const rawSteps = payload.steps || {};
@@ -478,11 +467,7 @@ function normalizeSetupStatus(payload = {}, sessionData = null) {
     bootstrapCompleted,
     bootstrapCurrentStep: bootstrapCompleted
       ? SETUP_STEP_ORDER[SETUP_STEP_ORDER.length - 1]
-      : deriveCurrentOnboardingStep({
-          passwordComplete: bootstrapSteps.password.completed,
-          githubComplete: bootstrapSteps.github.completed,
-          ociComplete: bootstrapSteps.oci.completed
-        }),
+      : deriveCurrentSetupStep(bootstrapSteps),
     updatedAt: payload.updatedAt || new Date().toISOString(),
     steps,
     bootstrapSteps
@@ -1601,7 +1586,7 @@ export function useWorkspaceApp() {
   const [refreshing, setRefreshing] = useState(false);
   const [session, setSession] = useState(null);
   const [setupStatus, setSetupStatus] = useState(() => createBlankSetupStatus());
-  const [activeOnboardingStep, setActiveOnboardingStep] = useState('password');
+  const [activeSetupTaskId, setActiveSetupTaskId] = useState(SETUP_FLOW_TASK_ORDER[0]);
   const [policies, setPolicies] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [runners, setRunners] = useState([]);
@@ -1619,6 +1604,7 @@ export function useWorkspaceApp() {
   const [githubConfigSaving, setGithubConfigSaving] = useState(false);
   const [githubConfigClearing, setGithubConfigClearing] = useState(false);
   const [githubConfigPromoting, setGithubConfigPromoting] = useState(false);
+  const [githubSetupActivationError, setGithubSetupActivationError] = useState('');
   const [githubActiveAppDeletingId, setGithubActiveAppDeletingId] = useState('');
   const [ociAuthStatus, setOciAuthStatus] = useState(createBlankOCIAuthStatus);
   const [ociAuthForm, setOciAuthForm] = useState(blankOCIAuthForm);
@@ -1667,6 +1653,7 @@ export function useWorkspaceApp() {
   const [editingPolicyId, setEditingPolicyId] = useState(null);
   const runtimeCatalogRequestIdRef = useRef(0);
   const policyCatalogRequestIdRef = useRef(0);
+  const currentSetupTaskIdRef = useRef('');
   const deferredEventSearch = useDeferredValue(eventSearch);
   const deferredRuntimeCompartmentOcid = useDeferredValue(String(ociRuntimeForm.compartmentOcid || '').trim());
   const deferredRuntimeAvailabilityDomain = useDeferredValue(String(ociRuntimeForm.availabilityDomain || '').trim());
@@ -1718,24 +1705,23 @@ export function useWorkspaceApp() {
     });
   }, [ociRuntimeStatus.effectiveSettings]);
 
-  const onboardingPasswordComplete = Boolean(setupStatus.bootstrapSteps?.password?.completed ?? !session?.mustChangePassword);
-  const onboardingGitHubComplete = Boolean(setupStatus.bootstrapSteps?.github?.completed);
-  const onboardingOCIComplete = Boolean(setupStatus.bootstrapSteps?.oci?.completed);
-  const onboardingBootstrapComplete = Boolean(setupStatus.bootstrapCompleted);
-
-  const currentOnboardingStep = useMemo(() => deriveCurrentOnboardingStep({
-    passwordComplete: onboardingPasswordComplete,
-    githubComplete: onboardingGitHubComplete,
-    ociComplete: onboardingOCIComplete
+  const needsSetup = useMemo(() => {
+    return Boolean(session?.authenticated) && !setupStatus.completed;
+  }, [session?.authenticated, setupStatus.completed]);
+  const setupFlow = useMemo(() => buildSetupFlow({
+    session,
+    setupStatus,
+    githubConfigStatus,
+    ociAuthStatus,
+    ociRuntimeStatus
   }), [
-    onboardingGitHubComplete,
-    onboardingOCIComplete,
-    onboardingPasswordComplete
+    githubConfigStatus,
+    ociAuthStatus,
+    ociRuntimeStatus,
+    session,
+    setupStatus
   ]);
-
-  const needsOnboarding = useMemo(() => {
-    return Boolean(session?.authenticated) && !onboardingBootstrapComplete;
-  }, [onboardingBootstrapComplete, session?.authenticated]);
+  const currentSetupTaskId = setupFlow.currentTaskId || SETUP_FLOW_TASK_ORDER[0];
 
   const recommendedSubnets = useMemo(() => {
     return subnetCandidates.filter((item) => item.isRecommended);
@@ -2009,13 +1995,23 @@ export function useWorkspaceApp() {
   ]);
 
   useEffect(() => {
-    if (!session?.authenticated || !needsOnboarding) {
-      setActiveOnboardingStep('password');
+    if (!needsSetup) {
+      currentSetupTaskIdRef.current = '';
+      setActiveSetupTaskId(SETUP_FLOW_TASK_ORDER[0]);
       return;
     }
 
-    setActiveOnboardingStep(currentOnboardingStep);
-  }, [session?.authenticated, needsOnboarding, currentOnboardingStep, setupStatus.updatedAt]);
+    if (currentSetupTaskId && currentSetupTaskIdRef.current !== currentSetupTaskId) {
+      currentSetupTaskIdRef.current = currentSetupTaskId;
+      setActiveSetupTaskId(currentSetupTaskId);
+      return;
+    }
+
+    const activeTask = setupFlow.tasks.find((task) => task.id === activeSetupTaskId);
+    if (!activeTask?.isEditable) {
+      setActiveSetupTaskId(currentSetupTaskId);
+    }
+  }, [activeSetupTaskId, currentSetupTaskId, needsSetup, setupFlow.tasks]);
 
   useEffect(() => {
     const selectedShape = policyValidation.selectedShape;
@@ -2075,6 +2071,7 @@ export function useWorkspaceApp() {
   function resetSetupState(sessionData = null) {
     runtimeCatalogRequestIdRef.current += 1;
     policyCatalogRequestIdRef.current += 1;
+    currentSetupTaskIdRef.current = '';
     setSetupStatus(createBlankSetupStatus(sessionData));
     setGithubConfigStatus(createBlankGitHubConfigStatus());
     setGithubConfigForm(blankGitHubConfigForm());
@@ -2084,6 +2081,7 @@ export function useWorkspaceApp() {
     setGithubDriftStatus(createBlankGitHubDriftState());
     setGithubDriftReconciling(false);
     setGithubConfigPromoting(false);
+    setGithubSetupActivationError('');
     setGithubActiveAppDeletingId('');
     setOciAuthStatus(createBlankOCIAuthStatus());
     setOciAuthForm(blankOCIAuthForm());
@@ -2311,12 +2309,68 @@ export function useWorkspaceApp() {
     }
   }
 
-  async function maybeFinishOnboarding(nextSetupStatus) {
-    if (!needsOnboarding || !nextSetupStatus?.bootstrapCompleted) {
+  async function maybeRefreshWorkspace(nextSetupStatus) {
+    if (!nextSetupStatus?.completed) {
       return nextSetupStatus;
     }
     await refreshAll();
     return nextSetupStatus;
+  }
+
+  async function reloadGitHubSetupData(options = {}) {
+    const [status, driftStatus, nextSetupStatus] = await Promise.all([
+      loadGitHubConfig({ silent: true, pendingManifest: options.pendingManifest }),
+      loadGitHubDrift({ silent: true }),
+      loadSetupStatus(session, { silent: true })
+    ]);
+
+    return {
+      status,
+      driftStatus,
+      nextSetupStatus
+    };
+  }
+
+  async function activateGitHubRoute(options = {}) {
+    setGithubConfigPromoting(true);
+    if (options.captureSetupError) {
+      setGithubSetupActivationError('');
+    }
+
+    try {
+      await api('/api/v1/github/config/staged/promote', {
+        method: 'POST'
+      });
+      startTransition(() => {
+        setGithubConfigResult(null);
+        if (options.captureSetupError) {
+          setGithubSetupActivationError('');
+        }
+      });
+      const { nextSetupStatus } = await reloadGitHubSetupData();
+      await maybeRefreshWorkspace(nextSetupStatus);
+      return {
+        ok: true,
+        nextSetupStatus
+      };
+    } catch (err) {
+      const description = normalizeOperatorErrorText(err?.message || t('toast.githubPromoteFailed'));
+      await reloadGitHubSetupData();
+      if (options.captureSetupError) {
+        startTransition(() => {
+          setGithubSetupActivationError(description);
+        });
+      }
+      if (options.reportFailure !== false) {
+        reportError(err, { title: t('toast.githubPromoteFailed') });
+      }
+      return {
+        ok: false,
+        error: description
+      };
+    } finally {
+      setGithubConfigPromoting(false);
+    }
   }
 
   async function loadGitHubConfig(options = {}) {
@@ -3106,6 +3160,7 @@ export function useWorkspaceApp() {
   async function handleGitHubTest(event) {
     event.preventDefault();
     setGithubConfigTesting(true);
+    setGithubSetupActivationError('');
     try {
       const result = await api('/api/v1/github/config/test', {
         method: 'POST',
@@ -3149,8 +3204,10 @@ export function useWorkspaceApp() {
     }
   }
 
-  async function handleGitHubSave() {
+  async function handleGitHubSave(options = {}) {
+    const autoActivate = Boolean(options.autoActivate);
     setGithubConfigSaving(true);
+    setGithubSetupActivationError('');
     try {
       const result = await api('/api/v1/github/config/staged', {
         method: 'POST',
@@ -3162,12 +3219,20 @@ export function useWorkspaceApp() {
       if (githubManifestState.pending) {
         await clearGitHubManifestPending({ silent: true });
       }
-      const [, , nextSetupStatus] = await Promise.all([
-        loadGitHubConfig({ silent: true, pendingManifest: null }),
-        loadGitHubDrift({ silent: true }),
-        loadSetupStatus(session, { silent: true })
-      ]);
-      await maybeFinishOnboarding(nextSetupStatus);
+
+      if (autoActivate) {
+        const activation = await activateGitHubRoute({
+          captureSetupError: true,
+          reportFailure: false
+        });
+        if (!activation.ok) {
+          return null;
+        }
+        return result;
+      }
+
+      const { nextSetupStatus } = await reloadGitHubSetupData({ pendingManifest: null });
+      await maybeRefreshWorkspace(nextSetupStatus);
       return result;
     } catch (err) {
       reportError(err, { title: t('toast.githubSaveFailed') });
@@ -3198,26 +3263,11 @@ export function useWorkspaceApp() {
     }
   }
 
-  async function handleGitHubPromote() {
-    setGithubConfigPromoting(true);
-    try {
-      await api('/api/v1/github/config/staged/promote', {
-        method: 'POST'
-      });
-      startTransition(() => {
-        setGithubConfigResult(null);
-      });
-      const [, , nextSetupStatus] = await Promise.all([
-        loadGitHubConfig({ silent: true }),
-        loadGitHubDrift({ silent: true }),
-        loadSetupStatus(session, { silent: true })
-      ]);
-      await maybeFinishOnboarding(nextSetupStatus);
-    } catch (err) {
-      reportError(err, { title: t('toast.githubPromoteFailed') });
-    } finally {
-      setGithubConfigPromoting(false);
-    }
+  async function handleGitHubPromote(options = {}) {
+    return activateGitHubRoute({
+      captureSetupError: Boolean(options.captureSetupError),
+      reportFailure: options.reportFailure !== false
+    });
   }
 
   async function handleGitHubActiveAppRemove(configId) {
@@ -3303,6 +3353,7 @@ export function useWorkspaceApp() {
     });
 
     setGithubConfigMode(normalizedMode);
+    setGithubSetupActivationError('');
 
     if (discardManifest && githubManifestState.pending) {
       void clearGitHubManifestPending({
@@ -3310,6 +3361,13 @@ export function useWorkspaceApp() {
         resetDraftCredentials: true
       });
     }
+  }
+
+  async function handleGitHubActivateRoute() {
+    return activateGitHubRoute({
+      captureSetupError: true,
+      reportFailure: false
+    });
   }
 
   async function handleOCIAuthFile(field, file) {
@@ -3391,7 +3449,7 @@ export function useWorkspaceApp() {
         loadSetupStatus(session, { silent: true }),
         loadSubnetCandidates({ silent: true })
       ]);
-      await maybeFinishOnboarding(nextSetupStatus);
+      await maybeRefreshWorkspace(nextSetupStatus);
       return result;
     } catch (err) {
       reportError(err);
@@ -3454,7 +3512,7 @@ export function useWorkspaceApp() {
         loadOCIAuthStatus(),
         loadSetupStatus(session, { silent: true })
       ]);
-      await maybeFinishOnboarding(nextSetupStatus);
+      await maybeRefreshWorkspace(nextSetupStatus);
       return status;
     } catch (err) {
       reportError(err);
@@ -3625,21 +3683,17 @@ export function useWorkspaceApp() {
     }
   }
 
-  function handleSelectOnboardingStep(nextStep) {
-    if (!needsOnboarding || !SETUP_STEP_ORDER.includes(nextStep)) {
+  function handleSelectSetupTask(nextTaskId) {
+    if (!needsSetup || !SETUP_FLOW_TASK_ORDER.includes(nextTaskId)) {
       return;
     }
 
-    const stepStates = setupStatus.bootstrapSteps || setupStatus.steps || {};
-    const currentStepIndex = SETUP_STEP_ORDER.indexOf(currentOnboardingStep);
-    const nextStepIndex = SETUP_STEP_ORDER.indexOf(nextStep);
-    const reachable = nextStepIndex >= 0 && nextStepIndex <= currentStepIndex;
-
-    if (!reachable && !stepStates[nextStep]?.completed) {
+    const task = setupFlow.tasks.find((item) => item.id === nextTaskId);
+    if (!task?.isEditable) {
       return;
     }
 
-    setActiveOnboardingStep(nextStep);
+    setActiveSetupTaskId(nextTaskId);
   }
 
   return {
@@ -3649,10 +3703,11 @@ export function useWorkspaceApp() {
     refreshing,
     session,
     setupStatus,
-    needsOnboarding,
-    currentOnboardingStep,
-    activeOnboardingStep,
-    selectOnboardingStep: handleSelectOnboardingStep,
+    needsSetup,
+    setupFlow,
+    currentSetupTaskId,
+    activeSetupTaskId,
+    selectSetupTask: handleSelectSetupTask,
     policies,
     jobs,
     runners,
@@ -3673,6 +3728,7 @@ export function useWorkspaceApp() {
     githubConfigSaving,
     githubConfigClearing,
     githubConfigPromoting,
+    githubSetupActivationError,
     githubActiveAppDeletingId,
     githubDriftStatus,
     githubDriftReconciling,
@@ -3757,6 +3813,7 @@ export function useWorkspaceApp() {
     handleGitHubSave,
     handleGitHubClear,
     handleGitHubPromote,
+    handleGitHubActivateRoute,
     handleGitHubActiveAppRemove,
     handleGitHubDriftReconcile,
     handleGitHubManifestCreate,

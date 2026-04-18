@@ -2,7 +2,7 @@ import { CloudIcon, GitBranchIcon, RocketIcon } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useI18n } from '@/i18n';
 import { compactValue, summarizeOCIAuthMode } from '@/lib/workspace-formatters';
 import { resolveGitHubActiveConfigs } from '@/lib/workspace-forms';
@@ -166,7 +166,7 @@ function SetupOverviewTile({ icon: Icon, label, value, note, ready }) {
   );
 }
 
-function SetupSectionTrigger({ icon: Icon, title, description, ready, summary }) {
+function SetupSectionTrigger({ icon: Icon, title, ready, summary }) {
   const { t } = useI18n();
 
   return (
@@ -176,7 +176,6 @@ function SetupSectionTrigger({ icon: Icon, title, description, ready, summary })
           <Icon className="size-4 text-muted-foreground" />
           <span className="text-base font-semibold tracking-tight">{title}</span>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2 md:justify-end">
         <Badge variant={statusBadgeVariant(ready)}>{ready ? t('common.ready') : t('common.needsSetup')}</Badge>
@@ -265,9 +264,8 @@ export function SetupView({
     <div className="flex flex-col gap-6">
       <Card className="border bg-card/95">
         <CardHeader className="border-b">
-          <div className="flex flex-col gap-1">
+          <div>
             <CardTitle>{t('setup.overview.title')}</CardTitle>
-            <CardDescription>{t('setup.overview.description')}</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="grid gap-4 pt-5 md:grid-cols-2 xl:grid-cols-3">
@@ -319,7 +317,6 @@ export function SetupView({
             <SetupSectionTrigger
               icon={GitBranchIcon}
               title={t('setup.section.github.title')}
-              description={t('setup.section.github.description')}
               ready={githubReady}
               summary={githubSummary}
             />
@@ -329,6 +326,8 @@ export function SetupView({
               <GitHubConfigView
                 {...githubSetupProps}
                 githubReady={githubReady}
+                description={null}
+                mode="settings"
               />
             </div>
           </AccordionContent>
@@ -339,7 +338,6 @@ export function SetupView({
             <SetupSectionTrigger
               icon={CloudIcon}
               title={t('setup.section.oci.title')}
-              description={t('setup.section.oci.description')}
               ready={ociStepReady}
               summary={ociSummary}
             />
@@ -348,7 +346,8 @@ export function SetupView({
             <div className="border-t pt-4">
               <OCIAuthView
                 title={t('oci.title')}
-                description={t('oci.description')}
+                description={null}
+                mode="settings"
                 ociAuthForm={ociAuthForm}
                 setOciAuthForm={setOciAuthForm}
                 onFileUpload={onOCIFileUpload}

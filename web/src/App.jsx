@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { BookOpenTextIcon, LogInIcon, LogOutIcon, RefreshCwIcon } from 'lucide-react';
+import { LogInIcon } from 'lucide-react';
 
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { BrandLockup } from '@/components/app/brand-logo';
@@ -12,7 +12,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useWorkspaceApp } from '@/hooks/use-workspace-app';
 import { useI18n } from '@/i18n';
 import { buildDocsHref, buildDocsPath, parseDocsPath } from '@/lib/docs';
-import { SETUP_STEP_META } from '@/lib/workspace-constants';
+import { SETUP_FLOW_TASK_META } from '@/lib/workspace-constants';
 import { LoginView } from '@/views/login-view.jsx';
 import { OverviewView } from '@/views/overview-view.jsx';
 import { PasswordChangeFormCard } from '@/views/password-change-view.jsx';
@@ -53,8 +53,8 @@ const RunnerImagesView = lazy(() =>
   import('@/views/runner-images-view.jsx').then((module) => ({ default: module.RunnerImagesView }))
 );
 
-const SetupOnboardingView = lazy(() =>
-  import('@/views/setup-onboarding-view.jsx').then((module) => ({ default: module.SetupOnboardingView }))
+const SetupShell = lazy(() =>
+  import('@/views/setup-shell.jsx').then((module) => ({ default: module.SetupShell }))
 );
 
 const SetupView = lazy(() =>
@@ -138,6 +138,8 @@ function buildGitHubSetupProps(workspace) {
     onReconcileDrift: workspace.handleGitHubDriftReconcile,
     githubConfigStatus: workspace.githubConfigStatus,
     githubConfigResult: workspace.githubConfigResult,
+    githubSetupActivationError: workspace.githubSetupActivationError,
+    onActivate: workspace.handleGitHubActivateRoute,
     githubReady: workspace.setupStatus.steps?.github?.completed
   };
 }
@@ -315,24 +317,43 @@ function renderMainView(workspace, onNavigate) {
   }
 }
 
-function renderOnboardingStep(workspace, t) {
-  switch (workspace.activeOnboardingStep) {
-    case 'github':
+function renderSetupTask(workspace, t) {
+  switch (workspace.activeSetupTaskId) {
+    case 'github-connect':
       return (
         <GitHubConfigView
           {...buildGitHubSetupProps(workspace)}
-          title={t(SETUP_STEP_META.github.titleKey)}
-          description={t(SETUP_STEP_META.github.descriptionKey)}
-          layout="onboarding"
+          title={t(SETUP_FLOW_TASK_META['github-connect'].titleKey)}
+          description={t(SETUP_FLOW_TASK_META['github-connect'].descriptionKey)}
+          mode="setup-connect"
         />
       );
-    case 'oci':
+    case 'oci-credential':
       return (
         <OCIAuthView
           {...buildOCISetupProps(workspace, {
-            title: t(SETUP_STEP_META.oci.titleKey),
-            description: t(SETUP_STEP_META.oci.descriptionKey),
-            layout: 'onboarding'
+            title: t(SETUP_FLOW_TASK_META['oci-credential'].titleKey),
+            description: t(SETUP_FLOW_TASK_META['oci-credential'].descriptionKey),
+            mode: 'setup-credential'
+          })}
+        />
+      );
+    case 'github-repositories':
+      return (
+        <GitHubConfigView
+          {...buildGitHubSetupProps(workspace)}
+          title={t(SETUP_FLOW_TASK_META['github-repositories'].titleKey)}
+          description={t(SETUP_FLOW_TASK_META['github-repositories'].descriptionKey)}
+          mode="setup-repositories"
+        />
+      );
+    case 'oci-runtime':
+      return (
+        <OCIAuthView
+          {...buildOCISetupProps(workspace, {
+            title: t(SETUP_FLOW_TASK_META['oci-runtime'].titleKey),
+            description: t(SETUP_FLOW_TASK_META['oci-runtime'].descriptionKey),
+            mode: 'setup-runtime'
           })}
         />
       );
@@ -346,8 +367,8 @@ function renderOnboardingStep(workspace, t) {
               setPasswordForm={workspace.setPasswordForm}
               onSubmit={workspace.handlePasswordChange}
               passwordChanging={workspace.passwordChanging}
-              title={t(SETUP_STEP_META.password.titleKey)}
-              description={t(SETUP_STEP_META.password.descriptionKey)}
+              title={t(SETUP_FLOW_TASK_META.password.titleKey)}
+              description={t(SETUP_FLOW_TASK_META.password.descriptionKey)}
             />
           </Card>
         </div>
@@ -396,82 +417,6 @@ function PublicDocsShell({ locationState, navigate }) {
   );
 }
 
-function DeferredSetupShell({ workspace }) {
-  const { t } = useI18n();
-
-  return (
-    <div className="min-h-svh bg-background">
-      <header className="border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6 lg:px-8">
-          <BrandLockup
-            className="min-w-0"
-            title={t('setup.pendingShell.title')}
-            subtitle={t('setup.pendingShell.subtitle')}
-            markClassName="size-11 rounded-[1.05rem] p-1.5"
-            subtitleClassName="max-w-2xl text-sm"
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <LocaleSwitcher />
-            <Button variant="outline" size="sm" onClick={() => void workspace.refreshAll()} disabled={workspace.refreshing} aria-busy={workspace.refreshing}>
-              <RefreshCwIcon data-icon="inline-start" className={workspace.refreshing ? 'animate-spin' : undefined} />
-              {t('common.refresh')}
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href="/docs">
-                <BookOpenTextIcon data-icon="inline-start" />
-                {t('common.openDocs')}
-              </a>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => void workspace.handleLogout()}>
-              <LogOutIcon data-icon="inline-start" />
-              {t('common.signOut')}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col gap-6 px-4 py-5 md:px-6 md:py-6 lg:px-8">
-        <Card className="border bg-card/92 p-5">
-          <div className="space-y-2">
-            <h1 className="text-xl font-semibold tracking-tight">{t('header.finishSetup')}</h1>
-            <p className="max-w-3xl text-sm text-muted-foreground">{t('setup.pendingShell.body')}</p>
-          </div>
-        </Card>
-
-        <Suspense fallback={<RouteLoadingFallback />}>
-          <SetupView
-            setupStatus={workspace.setupStatus}
-            githubSetupProps={buildGitHubSetupProps(workspace)}
-            ociAuthForm={workspace.ociAuthForm}
-            setOciAuthForm={workspace.setOciAuthForm}
-            onOCIFileUpload={workspace.handleOCIAuthFile}
-            onOCITest={workspace.handleOCIAuthTest}
-            onOCISave={workspace.handleOCIAuthSave}
-            onOCIClear={workspace.handleOCIAuthClear}
-            ociAuthInspecting={workspace.ociAuthInspecting}
-            ociAuthInspectResult={workspace.ociAuthInspectResult}
-            ociAuthTesting={workspace.ociAuthTesting}
-            ociAuthSaving={workspace.ociAuthSaving}
-            ociAuthClearing={workspace.ociAuthClearing}
-            ociAuthStatus={workspace.ociAuthStatus}
-            ociAuthResult={workspace.ociAuthResult}
-            ociRuntimeStatus={workspace.ociRuntimeStatus}
-            ociRuntimeForm={workspace.ociRuntimeForm}
-            setOciRuntimeForm={workspace.setOciRuntimeForm}
-            runtimeCatalog={workspace.runtimeCatalog}
-            runtimeCatalogValidation={workspace.runtimeCatalogValidation}
-            onRuntimeCatalogRefresh={workspace.handleRuntimeCatalogRefresh}
-            onOCIRuntimeSave={workspace.handleOCIRuntimeSave}
-            onOCIRuntimeClear={workspace.handleOCIRuntimeClear}
-            ociRuntimeSaving={workspace.ociRuntimeSaving}
-            ociRuntimeClearing={workspace.ociRuntimeClearing}
-          />
-        </Suspense>
-      </main>
-    </div>
-  );
-}
-
 function AuthenticatedApp() {
   const { t } = useI18n();
   const workspace = useWorkspaceApp();
@@ -499,26 +444,21 @@ function AuthenticatedApp() {
     );
   }
 
-  if (workspace.needsOnboarding) {
+  if (workspace.needsSetup) {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
-        <SetupOnboardingView
-          setupStatus={workspace.setupStatus}
-          activeStepId={workspace.activeOnboardingStep}
-          currentStepId={workspace.currentOnboardingStep}
-          onSelectStep={workspace.selectOnboardingStep}
+        <SetupShell
+          setupFlow={workspace.setupFlow}
+          activeTaskId={workspace.activeSetupTaskId}
+          onSelectTask={workspace.selectSetupTask}
           refreshing={workspace.refreshing}
           onRefresh={() => void workspace.refreshAll()}
           onLogout={() => void workspace.handleLogout()}
         >
-          {renderOnboardingStep(workspace, t)}
-        </SetupOnboardingView>
+          {renderSetupTask(workspace, t)}
+        </SetupShell>
       </Suspense>
     );
-  }
-
-  if (!workspace.setupStatus.completed) {
-    return <DeferredSetupShell workspace={workspace} />;
   }
 
   return (

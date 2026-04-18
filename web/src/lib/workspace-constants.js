@@ -26,7 +26,6 @@ export const GITHUB_ORGANIZATION_SLUG_MAX_LENGTH = 39;
 export const SETTINGS_NAV_ITEM = {
   id: 'settings',
   labelKey: 'nav.settings.label',
-  descriptionKey: 'nav.settings.description',
   icon: KeyRoundIcon
 };
 
@@ -34,43 +33,36 @@ export const NAV_ITEMS = [
   {
     id: 'overview',
     labelKey: 'nav.overview.label',
-    descriptionKey: 'nav.overview.description',
     icon: LayoutDashboardIcon
   },
   {
     id: 'docs',
     labelKey: 'nav.docs.label',
-    descriptionKey: 'nav.docs.description',
     icon: BookOpenTextIcon
   },
   {
     id: 'policies',
     labelKey: 'nav.policies.label',
-    descriptionKey: 'nav.policies.description',
     icon: SlidersHorizontalIcon
   },
   {
     id: 'runners',
     labelKey: 'nav.runners.label',
-    descriptionKey: 'nav.runners.description',
     icon: ServerIcon
   },
   {
     id: 'runner-images',
     labelKey: 'nav.runnerImages.label',
-    descriptionKey: 'nav.runnerImages.description',
     icon: ImageIcon
   },
   {
     id: 'jobs',
     labelKey: 'nav.jobs.label',
-    descriptionKey: 'nav.jobs.description',
     icon: BoxesIcon
   },
   {
     id: 'events',
     labelKey: 'nav.events.label',
-    descriptionKey: 'nav.events.description',
     icon: ScrollTextIcon
   }
 ];
@@ -102,6 +94,63 @@ export const SETUP_STEP_META = {
     icon: CloudIcon
   }
 };
+
+export const SETUP_FLOW_TASK_ORDER = [
+  'password',
+  'github-connect',
+  'oci-credential',
+  'github-repositories',
+  'oci-runtime'
+];
+
+export const SETUP_FLOW_TASK_META = {
+  password: {
+    id: 'password',
+    groupId: 'access',
+    titleKey: 'setup.task.password.title',
+    descriptionKey: 'setup.task.password.description',
+    icon: ShieldCheckIcon
+  },
+  'github-connect': {
+    id: 'github-connect',
+    groupId: 'access',
+    titleKey: 'setup.task.githubConnect.title',
+    descriptionKey: 'setup.task.githubConnect.description',
+    icon: GitBranchIcon
+  },
+  'oci-credential': {
+    id: 'oci-credential',
+    groupId: 'access',
+    titleKey: 'setup.task.ociCredential.title',
+    descriptionKey: 'setup.task.ociCredential.description',
+    icon: CloudIcon
+  },
+  'github-repositories': {
+    id: 'github-repositories',
+    groupId: 'jobs',
+    titleKey: 'setup.task.githubRepositories.title',
+    descriptionKey: 'setup.task.githubRepositories.description',
+    icon: GitBranchIcon
+  },
+  'oci-runtime': {
+    id: 'oci-runtime',
+    groupId: 'jobs',
+    titleKey: 'setup.task.ociRuntime.title',
+    descriptionKey: 'setup.task.ociRuntime.description',
+    icon: ServerIcon
+  }
+};
+
+export const SETUP_FLOW_GROUPS = [
+  {
+    id: 'access',
+    titleKey: 'setup.group.access'
+  },
+  {
+    id: 'jobs',
+    titleKey: 'setup.group.jobs'
+  }
+];
 
 export function createBlankGitHubConfigView() {
   return {
